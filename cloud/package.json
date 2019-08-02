@@ -1,0 +1,26 @@
+{
+  "name": "iaac-code-build-bot",
+  "version": "0.0.0",
+  "description": "...",
+  "private": true,
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm src/*.js",
+    "cdk": "cdk"
+  },
+  "author": {
+    "name": "fogfish",
+    "url": "https://github.com/fogfish/code-build-bot"
+  },
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@types/node": "*",
+    "@aws-cdk/core": "1.3.0",
+    "@aws-cdk/aws-iam": "1.3.0",
+    "@aws-cdk/aws-lambda": "1.3.0",
+    "@aws-cdk/aws-apigateway": "1.3.0",
+    "@aws-cdk/aws-logs": "1.3.0",
+    "@aws-cdk/aws-events": "1.3.0",
+    "@aws-cdk/aws-events-targets": "1.3.0"
+  }
+}
