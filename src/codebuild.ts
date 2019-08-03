@@ -35,7 +35,7 @@ export namespace codebuild {
       },
       environment: {
         type: "LINUX_CONTAINER",
-        image: process.env.CODE_BUILD_BASE + "/" + spec.image,
+        image: process.env.BASE_CODE_BUILD + "/" + spec.image,
         computeType: "BUILD_GENERAL1_SMALL",
         privilegedMode: true
       },

@@ -118,7 +118,7 @@ function WebHook(parent: cdk.Construct): lambda.Function {
       environment: {
         'ROLE_CODE_BUILD': role.roleName,
         'GITHUB_TOKEN': process.env.GITHUB_TOKEN,
-        'BASE_CODE_BUILD': cdk.Aws.ACCOUNT_ID + ".dkr.ecr." + process.env.AWS_REGION + ".amazonaws.com/" + process.env.ORG + "/"
+        'BASE_CODE_BUILD': cdk.Aws.ACCOUNT_ID + ".dkr.ecr." + cdk.Aws.REGION + ".amazonaws.com/" + process.env.ORG
       }
     }
   )

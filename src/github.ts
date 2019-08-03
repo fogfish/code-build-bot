@@ -30,7 +30,7 @@ export namespace github {
         sha: commit,
         state: 'pending',
         target_url: url,
-        description: '...',
+        description: 'build results',
         context: 'code-build-bot'
       }
     )
@@ -70,7 +70,9 @@ export namespace github {
       repo: name(repo),
       path: path,
       ref: commit
-    }).then(x => atob(x.data.content))
+    }).then(x => {
+      return (Buffer.from(x.data.content, 'base64')).toString('utf-8')
+    })
   }
 
 }
