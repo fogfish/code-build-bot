@@ -1,4 +1,5 @@
 import * as aws from 'aws-sdk'
+import * as bot from './code-build-bot'
 
 export namespace codebuild {
   aws.config.update({ region: process.env.AWS_REGION })
@@ -10,7 +11,8 @@ export namespace codebuild {
 
   //
   export function status(id: string): string {
-    return "https://console.aws.amazon.com/codebuild/home?region=" + process.env.AWS_REGION + "#/builds/" + id + "/view/new"
+    const build = id.split('/')[1] || id
+    return "https://console.aws.amazon.com/codebuild/home?region=" + process.env.AWS_REGION + "#/builds/" + build + "/view/new"
   }
 
   //
@@ -52,14 +54,19 @@ export namespace codebuild {
   }
 
   //
-  export function run(repo: string, config: any): Promise<any> {
-    const name = nameCodeBuild(repo)
-    const env  = Object.keys(config).map(key => ({name: key, value: config[key].toString()}))
+  export function run(env: bot.Env): Promise<any> {
+    const name = nameCodeBuild(env.repo)
+    const vars = [
+      {name: "BUILD_LEVEL", value: String(env.level)},
+      {name: "BUILD_ISSUE", value: String(env.issue)},
+      {name: "BUILD_COMMIT", value: String(env.commit)},
+      {name: "BUILD_RELEASE", value: String(env.release)},
+    ]
     return api.startBuild({
       projectName: name,
       artifactsOverride: { type: 'NO_ARTIFACTS' },
-      sourceVersion: config.CI_COMMIT,
-      environmentVariablesOverride: env,
+      sourceVersion: env.commit,
+      environmentVariablesOverride: vars,
       buildspecOverride: 'buildspec.yml'
     }).promise()
   }

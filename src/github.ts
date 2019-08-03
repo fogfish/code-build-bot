@@ -36,7 +36,7 @@ export namespace github {
     )
   }
 
-  export function failure(repo: string, commit: string, url: string, text: string = 'failure'): Promise<any> {
+  export function failure(repo: string, commit: string, url: string, text: string = 'build failed'): Promise<any> {
     return api.repos.createStatus(
       {
         owner: owner(repo),
@@ -72,6 +72,42 @@ export namespace github {
       ref: commit
     }).then(x => {
       return (Buffer.from(x.data.content, 'base64')).toString('utf-8')
+    })
+  }
+
+  export function issue(repo: string, title: string, details: string): Promise<any> {
+    return api.issues.create({
+      owner: owner(repo),
+      repo: name(repo),
+      title: title,
+      body: details
+    })
+  }
+
+  export function update(repo: string, issue: number, title: string): Promise<any> {
+    return api.issues.update({
+      owner: owner(repo),
+      repo: name(repo),
+      issue_number: issue,
+      title: title
+    })
+  }
+
+  export function comment(repo: string, issue: number, text: string): Promise<any> {
+    return api.issues.createComment({
+      owner: owner(repo),
+      repo: name(repo),
+      issue_number: issue,
+      body: text
+    })
+  }
+
+  export function close(repo: string, issue: number): Promise<any> {
+    return api.issues.update({
+      owner: owner(repo),
+      repo: name(repo),
+      issue_number: issue,
+      state: 'closed'
     })
   }
 
