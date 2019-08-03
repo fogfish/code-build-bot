@@ -22,7 +22,7 @@ export namespace codebuild {
   }
 
   //
-  export function config(repo: string, url: string): Promise<any> {
+  export function config(repo: string, url: string, spec: {image: string}): Promise<any> {
     const name = nameCodeBuild(repo)
     return api.createProject({
       name: name,
@@ -35,7 +35,7 @@ export namespace codebuild {
       },
       environment: {
         type: "LINUX_CONTAINER",
-        image: "189549315145.dkr.ecr.eu-west-1.amazonaws.com/silvere/code-build-erlang",
+        image: process.env.CODE_BUILD_BASE + "/" + spec.image,
         computeType: "BUILD_GENERAL1_SMALL",
         privilegedMode: true
       },

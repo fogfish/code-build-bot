@@ -117,7 +117,8 @@ function WebHook(parent: cdk.Construct): lambda.Function {
       role: iaac(parent, WebHookRole),
       environment: {
         'ROLE_CODE_BUILD': role.roleName,
-        'GITHUB_TOKEN': 'xxx'
+        'GITHUB_TOKEN': process.env.GITHUB_TOKEN,
+        'BASE_CODE_BUILD': cdk.Aws.ACCOUNT_ID + ".dkr.ecr." + process.env.AWS_REGION + ".amazonaws.com/" + process.env.ORG + "/"
       }
     }
   )
@@ -131,7 +132,7 @@ function Supervisor(parent: cdk.Construct): lambda.Function {
       handler: 'supervisor.main',
       role: iaac(parent, SupervisorRole),
       environment: {
-        'GITHUB_TOKEN': 'xxx'
+        'GITHUB_TOKEN': process.env.GITHUB_TOKEN
       }
     }
   )

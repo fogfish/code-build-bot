@@ -42,7 +42,8 @@ async function build(repo: string, url: string, env: Env): Promise<Response> {
   const exists = await codebuild.exists(repo)
   if (!exists) {
     console.log("=[ create ]=> ", repo, url)
-    const project = await codebuild.config(repo, url)
+    const spec = await github.file(repo, env.CI_COMMIT, '.codebuild.json')
+    const project = await codebuild.config(repo, url, JSON.parse(spec))
     console.log("=[ create ]=> success", project)
   }
 
@@ -69,9 +70,9 @@ async function webhook(json: Json): Promise<Response> {
     const repo   = json.repository.full_name
     const url    = json.repository.clone_url
     return build(repo, url, config)
-      .catch(e => {
+      .catch(async e => {
         console.error("=[ failure ]=> ", e)
-        github.failure(repo, config.CI_COMMIT, '')
+        await github.failure(repo, config.CI_COMMIT, '', 'invalid config')
         throw e
       })
   }

@@ -14,30 +14,37 @@ export namespace github {
     }
   })
 
+  function owner(repo: string): string {
+    return repo.split('/')[0]
+  }
+
+  function name(repo: string): string {
+    return repo.split('/')[1]
+  }
 
   export function pending(repo: string, commit: string, url: string): Promise<any> {
     return api.repos.createStatus(
       {
-        owner: repo.split('/')[0],
-        repo: repo.split('/')[1],
+        owner: owner(repo),
+        repo: name(repo),
         sha: commit,
         state: 'pending',
         target_url: url,
-        description: 'building',
+        description: '...',
         context: 'code-build-bot'
       }
     )
   }
 
-  export function failure(repo: string, commit: string, url: string): Promise<any> {
+  export function failure(repo: string, commit: string, url: string, text: string = 'failure'): Promise<any> {
     return api.repos.createStatus(
       {
-        owner: repo.split('/')[0],
-        repo: repo.split('/')[1],
+        owner: owner(repo),
+        repo: name(repo),
         sha: commit,
         state: 'failure',
         target_url: url,
-        description: 'failure',
+        description: text,
         context: 'code-build-bot'
       }
     )
@@ -46,8 +53,8 @@ export namespace github {
   export function success(repo: string, commit: string, url: string): Promise<any> {
     return api.repos.createStatus(
       {
-        owner: repo.split('/')[0],
-        repo: repo.split('/')[1],
+        owner: owner(repo),
+        repo: name(repo),
         sha: commit,
         state: 'success',
         target_url: url,
@@ -55,6 +62,15 @@ export namespace github {
         context: 'code-build-bot'
       }
     )
+  }
+
+  export function file(repo: string, commit: string, path: string): Promise<string> {
+    return api.repos.getContents({
+      owner: owner(repo),
+      repo: name(repo),
+      path: path,
+      ref: commit
+    }).then(x => atob(x.data.content))
   }
 
 }
