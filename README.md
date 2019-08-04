@@ -5,7 +5,7 @@ A bot automates pull requests delivery to development and production environment
 
 ## Inspiration
 
-![Git Workflow](./workflow.svg)
+![Git Workflow](./workflow.svg | width=100)
 
 ## Key features
 
