@@ -1,7 +1,7 @@
-import { codebuild } from './codebuild'
-import { github } from './github'
-import * as bot from './code-build-bot'
-import { message } from './text'
+import { codebuild } from './lib/codebuild'
+import { github } from './lib/github'
+import * as bot from './lib/code-build-bot'
+import { message } from './lib/text'
 
 //
 type Response  = {statusCode: number, body: string}

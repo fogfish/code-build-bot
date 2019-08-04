@@ -3,8 +3,8 @@
   "version": "0.0.0",
   "description": "...",
   "scripts": {
-    "build": "tsc src/*.ts",
-    "clean": "rm src/*.js"
+    "build": "tsc lib/*.ts *.ts",
+    "clean": "rm lib/*.js *.js"
   },
   "author": {
     "name": "fogfish",

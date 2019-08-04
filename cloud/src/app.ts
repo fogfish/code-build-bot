@@ -112,7 +112,7 @@ function WebHook(parent: cdk.Construct): lambda.Function {
   return new lambda.Function(parent, 'WebHook',
     {
       runtime: lambda.Runtime.NODEJS_10_X,
-      code: new lambda.AssetCode('../src'),
+      code: new lambda.AssetCode('../apps/webhook'),
       handler: 'webhook.main',
       role: iaac(parent, WebHookRole),
       environment: {
@@ -128,7 +128,7 @@ function Supervisor(parent: cdk.Construct): lambda.Function {
   return new lambda.Function(parent, 'Supervisor',
     {
       runtime: lambda.Runtime.NODEJS_10_X,
-      code: new lambda.AssetCode('../src'),
+      code: new lambda.AssetCode('../apps/webhook'),
       handler: 'supervisor.main',
       role: iaac(parent, SupervisorRole),
       environment: {
