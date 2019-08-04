@@ -1,6 +1,7 @@
 import { codebuild } from './codebuild'
 import { github } from './github'
 import * as bot from './code-build-bot'
+import { message } from './text'
 
 type Json     = any;
 type CodeBuildStatus = 'IN_PROGRESS' | 'FAILED' | 'STOPPED' | 'SUCCEEDED'
@@ -68,12 +69,12 @@ async function failure(level: bot.Level, json: Json) {
     case 'sync':
       return github.failure(repo(json), commit(json), logs(json))
     case 'free':
-      return github.issue(repo(json), "Clean up of PR " + cfg.BUILD_ISSUE + " is failed.", 'Caused by **Pull Request** #' + cfg.BUILD_ISSUE + ', ' + reason(json))
+      return github.issue(repo(json), message.failureFree(cfg.BUILD_ISSUE), causedBy(cfg.BUILD_ISSUE, json))
     case 'master':
-      return github.issue(repo(json), "Build " + at(json) + " is failed.", 'Caused by **Pull Request** #' + cfg.BUILD_ISSUE + ', ' + reason(json))
+      return github.issue(repo(json), message.failureBuild(at(json)), causedBy(cfg.BUILD_ISSUE, json))
     case 'release':
-      await github.update(repo(json), Number(cfg.BUILD_ISSUE), "Release " + cfg.BUILD_RELEASE + " " + at(json) + " is failed.")
-      return github.comment(repo(json), Number(cfg.BUILD_ISSUE), reason(json))
+      await github.update(repo(json), Number(cfg.BUILD_ISSUE), message.failureRelease(cfg.BUILD_RELEASE, at(json)))
+      return github.comment(repo(json), Number(cfg.BUILD_ISSUE), reasonOf(json))
   }  
 }
           
@@ -86,17 +87,25 @@ async function success(level: bot.Level, json: Json) {
     case 'free':
       return Promise.resolve(1)
     case 'master':
-      return github.comment(repo(json), Number(cfg.BUILD_ISSUE), 'build is [completed](' + logs(json) + ')')
+      return github.comment(repo(json), Number(cfg.BUILD_ISSUE), message.success(logs(json)))
     case 'release':
-      await github.comment(repo(json), Number(cfg.BUILD_ISSUE), 'build is [completed](' + logs(json) + ')')
+      await github.comment(repo(json), Number(cfg.BUILD_ISSUE), message.success(logs(json)))
       return github.close(repo(json), Number(cfg.BUILD_ISSUE))
   }
 }
 
-function reason(json: Json): string {
+function causedBy(pr: string, json: Json): string {
+  const build  = json.detail['build-id']
+  const url    = codebuild.status(build)
+  const logs   = json.detail['additional-information']['phases']
+  return message.failureCausedBy(pr, url, JSON.stringify(logs, null, 2))
+}
+
+function reasonOf(json: Json): string {
   const build  = json.detail['build-id']
   const url    = codebuild.status(build)
   const logs   = json.detail['additional-information']['phases']
 
-  return 'See [build logs](' + url + ')\n\n```javascript\n\n' + JSON.stringify(logs, null, 2) + '\n\n```'
+  return message.failure(url, JSON.stringify(logs, null, 2))
 }
+

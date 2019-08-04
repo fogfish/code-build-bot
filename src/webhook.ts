@@ -1,6 +1,7 @@
 import { codebuild } from './codebuild'
 import { github } from './github'
 import * as bot from './code-build-bot'
+import { message } from './text'
 
 //
 type Response  = {statusCode: number, body: string}
@@ -96,7 +97,7 @@ async function issueOf(level: bot.Level, json: Json): Promise<number> {
     case 'master':
       return Promise.resolve(Number(json.head_commit.message.match(/#\d+/)[0].substring(1)))
     case 'release':
-      return github.issue(repoOf(json), 'Release ' + releaseOf(level, json), '').then(x => x.data.number)
+      return github.issue(repoOf(json), message.release(releaseOf(level, json)), message.empty).then(x => x.data.number)
   }
 }
 
@@ -156,21 +157,19 @@ async function pending_with_logs(env: bot.Env, logs: string): Promise<any> {
       return Promise.resolve(0)    
     case 'master':
     case 'release':
-      return await github.comment(env.repo, env.issue, 'build is [pending](' + logs + ')')
+      return await github.comment(env.repo, env.issue, message.pending(logs))
   }
 }
 
-
 async function failure(env: bot.Env): Promise<any> {
-  const message = 'build aborted, check either repo or bot config'
   switch (env.level) {
     case 'init':
     case 'sync':
-      return github.failure(env.repo, env.commit, '', message)
+      return github.failure(env.repo, env.commit, message.empty, message.aborted)
     case 'free':
       return Promise.resolve(0)    
     case 'master':
     case 'release':
-      return await github.comment(env.repo, env.issue, message)
+      return await github.comment(env.repo, env.issue, message.aborted)
   }
 }
