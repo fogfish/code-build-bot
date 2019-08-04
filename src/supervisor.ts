@@ -68,11 +68,11 @@ async function failure(level: bot.Level, json: Json) {
     case 'sync':
       return github.failure(repo(json), commit(json), logs(json))
     case 'free':
-      return github.issue(repo(json), "Clean up of PR " + cfg.BUILD_ISSUE + " is failed.", '*Pull Request* #' + cfg.BUILD_ISSUE + '\n ' + reason(json))
+      return github.issue(repo(json), "Clean up of PR " + cfg.BUILD_ISSUE + " is failed.", 'Caused by **Pull Request** #' + cfg.BUILD_ISSUE + ', ' + reason(json))
     case 'master':
-      return github.issue(repo(json), "Build " + at(json) + " is failed.", '*Pull Request* #' + cfg.BUILD_ISSUE + '\n ' + reason(json))
+      return github.issue(repo(json), "Build " + at(json) + " is failed.", 'Caused by **Pull Request** #' + cfg.BUILD_ISSUE + ', ' + reason(json))
     case 'release':
-      await github.update(repo(json), Number(cfg.BUILD_ISSUE), "Release " + at(json) + " is failed.")
+      await github.update(repo(json), Number(cfg.BUILD_ISSUE), "Release " + cfg.BUILD_RELEASE + " " + at(json) + " is failed.")
       return github.comment(repo(json), Number(cfg.BUILD_ISSUE), reason(json))
   }  
 }
@@ -98,5 +98,5 @@ function reason(json: Json): string {
   const url    = codebuild.status(build)
   const logs   = json.detail['additional-information']['phases']
 
-  return '[Build logs](' + url + ')\n\n```javascript\n\n' + JSON.stringify(logs, null, 2) + '\n\n```'
+  return 'See [build logs](' + url + ')\n\n```javascript\n\n' + JSON.stringify(logs, null, 2) + '\n\n```'
 }
