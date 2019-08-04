@@ -10,7 +10,7 @@ function status(json: Json): CodeBuildStatus {
 }
 
 function config(json: Json): any {
-  json.detail['additional-information']['environment']['environment-variables']
+  return json.detail['additional-information']['environment']['environment-variables']
     .reduce((acc: any, x: any) => ({...acc, [x.name]: x.value}), {})
 }
 
@@ -68,16 +68,15 @@ async function failure(level: bot.Level, json: Json) {
     case 'sync':
       return github.failure(repo(json), commit(json), logs(json))
     case 'free':
-      return github.issue(repo(json), "Clean up of PR " + cfg.BUILD_ISSUE + " is failed.", '#' + cfg.BUILD_ISSUE + ', ' + reason(json))
+      return github.issue(repo(json), "Clean up of PR " + cfg.BUILD_ISSUE + " is failed.", '*Pull Request* #' + cfg.BUILD_ISSUE + '\n ' + reason(json))
     case 'master':
-      return github.issue(repo(json), "Build " + at(json) + " is failed.", reason(json))
+      return github.issue(repo(json), "Build " + at(json) + " is failed.", '*Pull Request* #' + cfg.BUILD_ISSUE + '\n ' + reason(json))
     case 'release':
-      await github.update(repo(json), Number(cfg.BUILD_ISSUE), "Build " + at(json) + " is failed.")
+      await github.update(repo(json), Number(cfg.BUILD_ISSUE), "Release " + at(json) + " is failed.")
       return github.comment(repo(json), Number(cfg.BUILD_ISSUE), reason(json))
   }  
 }
           
-
 async function success(level: bot.Level, json: Json) {
   const cfg = config(json)
   switch (level) {
@@ -93,60 +92,6 @@ async function success(level: bot.Level, json: Json) {
       return github.close(repo(json), Number(cfg.BUILD_ISSUE))
   }
 }
-
-
-// export async function main(json: Json): Promise<Json> {
-//   // TODO: raise an issue if free stage is failed.
-//   console.log("=[ code build ]=> ", JSON.stringify(json))
-
-//   const status = json.detail['build-status']
-//   const build  = json.detail['build-id']
-//   const repo   = json.detail['project-name'].replace('-', '/')
-//   const commit = json.detail['additional-information']['source-version']
-//   const env    = json.detail['additional-information']['environment']['environment-variables']
-//     .reduce((acc: any, x: any) => ({...acc, [x.name]: x.value}), {})
-//   const url    = codebuild.status(build)
-//   const time   = json.detail['additional-information']['build-start-time']
-
-//   switch (status) {
-//     case 'IN_PROGRESS':
-//       switch (env.BOT_LEVEL) {
-//         case "master":
-//         case "free":
-//         case "release":
-//           return Promise.resolve({})
-//         default:
-//           return github.pending(repo, commit, url)
-//       }
-//     case 'FAILED':
-//     case 'STOPPED':
-//       switch (env.BOT_LEVEL) {
-//         case "master":
-//           return github.issue(repo, "Build " + time + " is failed.", reason(json))
-//         case "release":
-//           await github.update(repo, Number(env.BOT_ISSUE), "Build " + time + " is failed.")
-//           return github.comment(repo, Number(env.BOT_ISSUE), reason(json))
-//         case "free":
-//           return github.issue(repo, "Clean up of PR " + env.BOT_ISSUE + " is failed.", '#' + env.BOT_ISSUE + ', ' + reason(json))
-//         default:
-//           return github.failure(repo, commit, url)
-//       }
-//     case 'SUCCEEDED':
-//       switch (env.BOT_LEVEL) {
-//         case "master":
-//           return github.comment(repo, Number(env.BOT_ISSUE), 'build is [completed](' + url + ')')
-//         case "release":
-//           await github.comment(repo, Number(env.BOT_ISSUE), 'build is [completed](' + url + ')')
-//           return github.close(repo, Number(env.BOT_ISSUE))
-//         case "free":
-//           return Promise.resolve({})
-//         default:
-//           return github.success(repo, commit, url)
-//       }      
-//   }
-
-//   return Promise.resolve('ok')
-// }
 
 function reason(json: Json): string {
   const build  = json.detail['build-id']
