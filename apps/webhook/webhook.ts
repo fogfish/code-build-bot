@@ -2,6 +2,7 @@ import { codebuild } from './lib/codebuild'
 import { github } from './lib/github'
 import * as bot from './lib/code-build-bot'
 import { message } from './lib/text'
+import * as crypto from 'crypto'
 
 //
 type Response  = {statusCode: number, body: string}
@@ -10,7 +11,17 @@ type Json      = any;
 //
 //
 export async function main(json: Json): Promise<Response> {
-  return webhook(JSON.parse(json.body))
+  return auth(json)
+    ? webhook(JSON.parse(json.body))
+    : Promise.resolve({statusCode: 403, body: "Forbidden"})
+}
+
+function auth(json: Json): boolean {
+  const hmac = crypto.createHmac('sha1', process.env.API_KEY)
+  hmac.update(json.body)
+  const sign = "sha1=" + hmac.digest('hex')
+
+  return sign === json.headers['X-Hub-Signature']
 }
 
 //
@@ -29,10 +40,7 @@ async function webhook(json: Json): Promise<Response> {
       })
   }
 
-  return Promise.resolve({
-    statusCode: 501,
-    body: "Not Supported"
-  })
+  return Promise.resolve({statusCode: 501, body: "Not Supported"})
 }
 
 //

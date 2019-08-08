@@ -26,10 +26,6 @@ import * as cdk from '@aws-cdk/core'
 
 export type IaaC<T> = (parent: cdk.Construct) => T
 
-export function iaac<T>(parent: cdk.Construct, fn: IaaC<T>): T {
-   return fn(new cdk.Construct(parent, fn.name))
-}
-
 export function _<T>(parent: cdk.Construct, ...fns: Array<IaaC<T>>): cdk.Construct {
   fns.forEach(
     fn => {

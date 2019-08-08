@@ -37,11 +37,11 @@ export namespace codebuild {
       },
       environment: {
         type: "LINUX_CONTAINER",
-        image: process.env.BASE_CODE_BUILD + "/" + spec.image,
+        image: code_build_image(spec.image),
         computeType: "BUILD_GENERAL1_SMALL",
         privilegedMode: true
       },
-      serviceRole: process.env.ROLE_CODE_BUILD,
+      serviceRole: process.env.CODE_BUILD_ROLE,
       logsConfig: {
         s3Logs: {status: "DISABLED"},
         cloudWatchLogs: {
@@ -51,6 +51,12 @@ export namespace codebuild {
         }
       }
     }).promise()
+  }
+
+  function code_build_image(image: string): string {
+    return image.match('/')
+      ? process.env.CODE_BUILD_BASE.split('/')[0] + '/' + image 
+      : process.env.CODE_BUILD_BASE + '/' + image
   }
 
   //

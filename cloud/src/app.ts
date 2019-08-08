@@ -5,12 +5,12 @@ import * as api from '@aws-cdk/aws-apigateway'
 import * as logs from '@aws-cdk/aws-logs'
 import * as events from '@aws-cdk/aws-events'
 import * as targets from '@aws-cdk/aws-events-targets'
-import { _, iaac } from './pure'
+import { _ } from './pure'
 
 //
 //
 function CodeBuildEvents(parent: cdk.Construct): events.Rule {
-  const target = new targets.LambdaFunction( iaac(parent, Supervisor) )
+  const target = new targets.LambdaFunction( Supervisor(parent) )
   return new events.Rule(parent, 'CodeBuildEvents', 
     {
       enabled: true,
@@ -88,7 +88,7 @@ function AllowCodeBuildAll(): iam.PolicyStatement {
 
 function AllowIAMConfig(): iam.PolicyStatement {
   return new iam.PolicyStatement({
-    resources: ['arn:aws:iam::' + cdk.Aws.ACCOUNT_ID + ':role/Bot-*'],
+    resources: ['arn:aws:iam::' + cdk.Aws.ACCOUNT_ID + ':role/CodeBuildBot-*'],
     actions: ['iam:GetRole', 'iam:PassRole']
   })
 }
@@ -108,17 +108,19 @@ function SupervisorRole(parent: cdk.Construct): iam.Role {
 //
 //
 function WebHook(parent: cdk.Construct): lambda.Function {
-  const role = iaac(parent, CodeBuildRole)
+  const namespace = process.env.NAMESPACE || 'code-build'
+  const role = CodeBuildRole(parent)
   return new lambda.Function(parent, 'WebHook',
     {
       runtime: lambda.Runtime.NODEJS_10_X,
       code: new lambda.AssetCode('../apps/webhook'),
       handler: 'webhook.main',
-      role: iaac(parent, WebHookRole),
+      role: WebHookRole(parent),
       environment: {
-        'ROLE_CODE_BUILD': role.roleName,
+        'CODE_BUILD_BASE': `${cdk.Aws.ACCOUNT_ID}.dkr.ecr.${cdk.Aws.REGION}.amazonaws.com/${namespace}`,
+        'CODE_BUILD_ROLE': role.roleName,
         'GITHUB_TOKEN': process.env.GITHUB_TOKEN,
-        'BASE_CODE_BUILD': cdk.Aws.ACCOUNT_ID + ".dkr.ecr." + cdk.Aws.REGION + ".amazonaws.com/" + process.env.ORG
+        'API_KEY': process.env.API_KEY
       }
     }
   )
@@ -130,7 +132,7 @@ function Supervisor(parent: cdk.Construct): lambda.Function {
       runtime: lambda.Runtime.NODEJS_10_X,
       code: new lambda.AssetCode('../apps/webhook'),
       handler: 'supervisor.main',
-      role: iaac(parent, SupervisorRole),
+      role: SupervisorRole(parent),
       environment: {
         'GITHUB_TOKEN': process.env.GITHUB_TOKEN
       }
@@ -156,8 +158,8 @@ function Gateway(parent: cdk.Construct): api.RestApi {
 //
 //
 function RestApi(parent: cdk.Construct): cdk.Construct {
-  const rest = iaac(parent, Gateway)
-  const webhook = new api.LambdaIntegration( iaac(parent, WebHook) )
+  const rest = Gateway(parent)
+  const webhook = new api.LambdaIntegration( WebHook(parent) )
 
   rest.root.addResource('webhook').addMethod('POST', webhook)
   return rest
@@ -165,7 +167,7 @@ function RestApi(parent: cdk.Construct): cdk.Construct {
 
 //
 //
-function Bot(stack: cdk.Construct): cdk.Construct {
+function CodeBuildBot(stack: cdk.Construct): cdk.Construct {
   _(stack, RestApi)
   _(stack, LogGroup)
   _(stack, CodeBuildEvents)
@@ -173,5 +175,5 @@ function Bot(stack: cdk.Construct): cdk.Construct {
 }
 
 const app = new cdk.App()
-_(app, Bot)
+_(app, CodeBuildBot)
 app.synth()
