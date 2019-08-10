@@ -66,7 +66,7 @@ export namespace codebuild {
       {name: "BUILD_LEVEL", value: String(env.level)},
       {name: "BUILD_ISSUE", value: String(env.issue)},
       {name: "BUILD_COMMIT", value: String(env.commit)},
-      {name: "BUILD_RELEASE", value: String(env.release)},
+      {name: "BUILD_RELEASE", value: String(env.release)}
     ]
     return api.startBuild({
       projectName: name,

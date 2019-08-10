@@ -1,10 +1,10 @@
 import * as cdk from '@aws-cdk/core'
-import * as iam from '@aws-cdk/aws-iam'
 import * as lambda from '@aws-cdk/aws-lambda'
 import * as api from '@aws-cdk/aws-apigateway'
 import * as logs from '@aws-cdk/aws-logs'
 import * as events from '@aws-cdk/aws-events'
 import * as targets from '@aws-cdk/aws-events-targets'
+import * as security from './security'
 import { _ } from './pure'
 
 //
@@ -28,26 +28,6 @@ function CodeBuildEvents(parent: cdk.Construct): events.Rule {
 
 //
 //
-function CodeBuildRole(parent: cdk.Construct): iam.Role {
-  const role = new iam.Role(parent, 'CodeBuildRole',
-    {
-      assumedBy: new iam.ServicePrincipal('codebuild.amazonaws.com')
-    }
-  )
-  role.addToPolicy(AllowLogsWrite())
-  role.addToPolicy(AllowLambdaAll())
-  return role
-}
-
-function AllowLambdaAll(): iam.PolicyStatement {
-  return new iam.PolicyStatement({
-    resources: ['*'],
-    actions: ['lambda:*']
-  })
-}
-
-//
-//
 function LogGroup(parent: cdk.Construct): cdk.Construct {
   return new logs.LogGroup(parent, 'LogGroup',
     {
@@ -57,65 +37,17 @@ function LogGroup(parent: cdk.Construct): cdk.Construct {
   )
 }
 
-
-//
-//
-function WebHookRole(parent: cdk.Construct): iam.Role {
-  const role = new iam.Role(parent, 'WebHookRole',
-    {
-      assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com')
-    }
-  )
-  role.addToPolicy(AllowCodeBuildAll())
-  role.addToPolicy(AllowLogsWrite())
-  role.addToPolicy(AllowIAMConfig())
-  return role
-}
-
-function AllowLogsWrite(): iam.PolicyStatement {
-  return new iam.PolicyStatement({
-    resources: ['*'],
-    actions: ['logs:CreateLogGroup', 'logs:CreateLogStream', 'logs:PutLogEvents']
-  })
-}
-
-function AllowCodeBuildAll(): iam.PolicyStatement {
-  return new iam.PolicyStatement({
-    resources: ['*'],
-    actions: ['codebuild:*']
-  })
-}
-
-function AllowIAMConfig(): iam.PolicyStatement {
-  return new iam.PolicyStatement({
-    resources: ['arn:aws:iam::' + cdk.Aws.ACCOUNT_ID + ':role/CodeBuildBot-*'],
-    actions: ['iam:GetRole', 'iam:PassRole']
-  })
-}
-
-//
-//
-function SupervisorRole(parent: cdk.Construct): iam.Role {
-  const role = new iam.Role(parent, 'SupervisorRole',
-    {
-      assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com')
-    }
-  )
-  role.addToPolicy(AllowLogsWrite())
-  return role
-}
-
 //
 //
 function WebHook(parent: cdk.Construct): lambda.Function {
   const namespace = process.env.NAMESPACE || 'code-build'
-  const role = CodeBuildRole(parent)
+  const role = security.CodeBuildRole(parent)
   return new lambda.Function(parent, 'WebHook',
     {
       runtime: lambda.Runtime.NODEJS_10_X,
       code: new lambda.AssetCode('../apps/webhook'),
       handler: 'webhook.main',
-      role: WebHookRole(parent),
+      role: security.WebHookRole(parent),
       environment: {
         'CODE_BUILD_BASE': `${cdk.Aws.ACCOUNT_ID}.dkr.ecr.${cdk.Aws.REGION}.amazonaws.com/${namespace}`,
         'CODE_BUILD_ROLE': role.roleName,
@@ -132,7 +64,7 @@ function Supervisor(parent: cdk.Construct): lambda.Function {
       runtime: lambda.Runtime.NODEJS_10_X,
       code: new lambda.AssetCode('../apps/webhook'),
       handler: 'supervisor.main',
-      role: SupervisorRole(parent),
+      role: security.SupervisorRole(parent),
       environment: {
         'GITHUB_TOKEN': process.env.GITHUB_TOKEN
       }
