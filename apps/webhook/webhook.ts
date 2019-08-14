@@ -37,13 +37,17 @@ async function webhook(build: type.Build): Promise<Response> {
     build.webhook = await chat.sayBuildPending(build, {topic: 'build'})
     await codebuild.config(build)
 
-    const spec = await codebuild.file(build, '.codebuild.json')
-    if (spec.approver && spec.approver.indexOf(build.webhook.head.developer) !== -1) {
+    if (build.type !== 'PullRequest') {
       await codebuild.build(build)
     } else {
-      await codebuild.check(build)
+      const spec = await codebuild.file(build, '.codebuild.json')
+      if (spec.approver && spec.approver.indexOf(build.webhook.head.developer) !== -1) {
+        await codebuild.build(build)
+      } else {
+        await codebuild.check(build)
+      }
     }
-    
+
     return Promise.resolve({statusCode: 200, body: JSON.stringify(build.webhook)})
   } catch (reason) {
     console.error("=[ bot failure ]=> ", reason)
