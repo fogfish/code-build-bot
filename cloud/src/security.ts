@@ -21,6 +21,18 @@ export function CodeBuildRole(parent: cdk.Construct): iam.Role {
 
 //
 //
+export function CodeDeployRole(parent: cdk.Construct): iam.Role {
+  const role = new iam.Role(parent, 'CodeDeployRole',
+    {
+      assumedBy: new iam.ServicePrincipal('codebuild.amazonaws.com')
+    }
+  )
+
+  return role
+}
+
+//
+//
 export function WebHookRole(parent: cdk.Construct): iam.Role {
   const role = new iam.Role(parent, 'WebHookRole',
     {
@@ -41,6 +53,7 @@ export function SupervisorRole(parent: cdk.Construct): iam.Role {
       assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com')
     }
   )
+  role.addToPolicy(AllowCodeBuildAll())
   role.addToPolicy(AllowLogsWrite())
   return role
 }

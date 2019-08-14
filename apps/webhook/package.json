@@ -14,7 +14,7 @@
   "dependencies": {
     "@octokit/rest": "^16.28.7",
     "@types/aws-sdk": "*",
-    "@types/node": "*",
+    "@types/node": "^12.7.1",
     "aws-sdk": "^2.503.0"
   }
 }

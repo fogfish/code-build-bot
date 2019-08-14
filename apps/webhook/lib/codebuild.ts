@@ -1,36 +1,47 @@
-import * as aws from 'aws-sdk'
-import * as bot from './code-build-bot'
+import * as type from './code-build-bot'
+import { Config } from './config'
 
 export namespace codebuild {
-  aws.config.update({ region: process.env.AWS_REGION })
-  const api = new aws.CodeBuild()
 
-  function nameCodeBuild(repo: string): string {
-    return repo.replace('/', '-')
+  export async function config(build: type.Build): Promise<type.WebHook> {
+    const has = await exists(build)
+    if (!has) {
+      console.log("=[ code build ]=> config ", build.webhook.base.repository)
+      const spec = await file(build, '.codebuild.json')
+      await create(build, spec)
+      console.log("=[ code build ]=> config success", codebuild)
+    }
+    return build.webhook
   }
 
-  //
-  export function status(id: string): string {
-    const build = id.split('/')[1] || id
-    return "https://console.aws.amazon.com/codebuild/home?region=" + process.env.AWS_REGION + "#/builds/" + build + "/view/new"
-  }
-
-  //
-  export function exists(repo: string): Promise<boolean> {
-    const name = nameCodeBuild(repo)
-    return api.batchGetProjects({names: [name]})
+  async function exists(build: type.Build): Promise<boolean> {
+    const name = nameCodeBuild(build.webhook.base.repository)
+    return Config.codebuild
+      .batchGetProjects({names: [name]})
       .promise()
       .then(x => (!x.projectsNotFound || x.projectsNotFound.indexOf(name) === -1) )
   }
 
+  export async function file(build: type.Build, path: string): Promise<type.CodeBuildSpec> {
+    const [owner, repo] = build.webhook.head.repository.split('/')
+    const ref = build.webhook.head.commit
+
+    return Config.github.repos
+      .getContents({owner, repo, path, ref})
+      .then(x => {
+        const data = (Buffer.from(x.data.content, 'base64')).toString('utf-8')
+        return <type.CodeBuildSpec>JSON.parse(data)
+      })
+  }
+
   //
-  export function config(repo: string, url: string, spec: {image: string}): Promise<any> {
-    const name = nameCodeBuild(repo)
-    return api.createProject({
+  async function create(build: type.Build, spec: type.CodeBuildSpec): Promise<type.Json> {
+    const name = nameCodeBuild(build.webhook.base.repository)
+    return Config.codebuild.createProject({
       name: name,
       source: {
         type: "GITHUB",
-        location: url
+        location: build.webhook.url
       },
       artifacts: {
         type: "NO_ARTIFACTS"
@@ -41,7 +52,7 @@ export namespace codebuild {
         computeType: "BUILD_GENERAL1_SMALL",
         privilegedMode: true
       },
-      serviceRole: process.env.CODE_BUILD_ROLE,
+      serviceRole: Config.CODE_BUILD_ROLE,
       logsConfig: {
         s3Logs: {status: "DISABLED"},
         cloudWatchLogs: {
@@ -53,28 +64,47 @@ export namespace codebuild {
     }).promise()
   }
 
+  function nameCodeBuild(repo: string): string {
+    return repo.replace('/', '-')
+  }
+
   function code_build_image(image: string): string {
     return image.match('/')
-      ? process.env.CODE_BUILD_BASE.split('/')[0] + '/' + image 
-      : process.env.CODE_BUILD_BASE + '/' + image
+      ? Config.CODE_BUILD_BASE.split('/')[0] + '/' + image 
+      : Config.CODE_BUILD_BASE + '/' + image
   }
 
   //
-  export function run(env: bot.Env): Promise<any> {
-    const name = nameCodeBuild(env.repo)
-    const vars = [
-      {name: "BUILD_LEVEL", value: String(env.level)},
-      {name: "BUILD_ISSUE", value: String(env.issue)},
-      {name: "BUILD_COMMIT", value: String(env.commit)},
-      {name: "BUILD_RELEASE", value: String(env.release)}
-    ]
-    return api.startBuild({
-      projectName: name,
-      artifactsOverride: { type: 'NO_ARTIFACTS' },
-      sourceVersion: env.commit,
-      environmentVariablesOverride: vars,
-      buildspecOverride: 'buildspec.yml'
-    }).promise()
+  export async function check(build: type.Build): Promise<type.URL> {
+    return run(build, 'checkspec.yml')
   }
+
+  export async function build(build: type.Build): Promise<type.URL | undefined> {
+    return run(build, 'buildspec.yml')
+  }
+
+  async function run(build: type.Build, buildspec: string): Promise<type.URL> {
+    const name = nameCodeBuild(build.webhook.base.repository)
+    const vars = [
+      {name: 'WEBHOOK', value: JSON.stringify(build.webhook)},
+      {name: 'BUILD', value: build.type},
+      {name: "BUILD_ISSUE", value: String(build.webhook.issue.number)},
+      {name: "BUILD_COMMIT", value: build.webhook.head.commit},
+      {name: "BUILD_RELEASE", value: build.webhook.release}
+    ]
+    return Config.codebuild.startBuild({
+        projectName: name,
+        artifactsOverride: { type: 'NO_ARTIFACTS' },
+        sourceVersion: build.webhook.head.commit,
+        environmentVariablesOverride: vars,
+        buildspecOverride: buildspec
+      })
+      .promise()
+      .then(x => (
+        `https://console.aws.amazon.com/codebuild/home?region=${process.env.AWS_REGION}#/builds/${x.build.id}/view/new`
+      ))
+  }
+
+
 
 }
