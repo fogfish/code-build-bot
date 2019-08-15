@@ -1,3 +1,10 @@
+//
+// Copyright (C) 2019 Dmitry Kolesnikov
+//
+// This file may be modified and distributed under the terms
+// of the MIT license.  See the LICENSE file for details.
+// https://github.com/fogfish/code-build-bot
+//
 // @doc
 //   type system of code build bot
 
@@ -69,55 +76,3 @@ export class ReleaseBuild extends Build {
   type = 'Release'
   constructor(webhook: WebHook) {super(webhook)}
 }
-
-
-
-
-
-
-//
-//
-// repo full_name
-// repo url
-// 
-
-// export interface EventWebHook {
-//   repository: Repository
-// }
-
-// export interface EventPullRequest extends EventWebHook {
-//   action: 'opened' | 'synchronize' | 'closed'
-//   pr: PullRequest
-// }
-
-// export interface EventPush extends EventWebHook {
-//   after: SHA
-//   ref: string
-// }
-
-// export interface EventMaster extends EventPush {}
-
-// export interface EventRelease extends EventPush {}
-
-
-// export interface Repository {
-//   full_name: string
-//   clone_url: string
-// }
-
-// export interface PullRequest {
-//   head: Commit
-// }
-
-
-export type Level = 'init' | 'sync' | 'free' | 'master' | 'release'
-
-export interface Env {
-  level: Level
-  repo: string
-  url: string
-  issue: number
-  commit: string
-  release: string | undefined
-}
-

@@ -15,59 +15,94 @@ The bot is optimized to support either forking or branching workflow. Please see
 
 ### Why this bot exists?
 
-We are building our solutions using small-decoupled deliverables - microservices. Our CI/CI still looks like monolith. Containers are the right approach to configure and deliver build environments, so called **build toolkit**. This bot provides an integration layer to [AWS CodeBuild](https://aws.amazon.com/codebuild/), which is a fully managed continuous integration service.
+We are building our solutions using small-decoupled deliverables - microservices. Our CI/CI still looks like monolith. Containers are the right approach to configure and deliver build environments, so called **build toolkit**. This bot provides an integration layer to [AWS CodeBuild](https://aws.amazon.com/codebuild/), which is a fully managed continuous integration service. These build toolkit are fully managed in your AWS account, which gives extra visibility on your processes. 
 
 The Code Build Bot does similar things as [AWS Code Pipeline](https://aws.amazon.com/codepipeline/) with an exception everything happens inside single CodeBuild session. Code Pipeline do have **cost factor** unless you are using [Monorepo](https://en.wikipedia.org/wiki/Monorepo). My workflows are optimized to gain most of productivity using Multirepo. You can easily inflate Code Pipeline costs above $1200 per year. Secondly, the bot supports both private and open source projects, [you pay](https://aws.amazon.com/codebuild/pricing/) only for usage of AWS CodeBuild.
 
 **Infrastructure as a Code** is only the right way to manage cloud resources. The provisioning and deployment of cloud resources shall be aligned with a service delivery and orchestrated by CI/CD system. This bot supports IaaC automation using either [Cloud Formation](https://aws.amazon.com/cloudformation/) or [AWS CDK](https://docs.aws.amazon.com/cdk/latest/guide/home.html). The **deployment automation** is a key feature here, please see my workflow for details. 
 
-Often, **flexibility on configurations** becomes an issue if you are using CI/CD DSL or point-and-click UIs, especially if you are aiming 100% automation. Everything shall be code including CI/CD pipelines. The Code Build Bot promotes usage of AWS CDK or shell scripts to implement delivery pipelines. This is extremely important with modern processes that relies on heterogenous technologies (e.g. `npm` is optimized for building and packaging JavaScript application but this is a wrong tool to make cloud deployments - `cdk` shall be used). 
+Often, **flexibility on configurations** becomes an issue if you are using custome CI/CD API or point-and-click UIs, especially if you are aiming 100% automation. Everything shall be code including CI/CD pipelines. The Code Build Bot promotes usage of AWS CDK or shell scripts to implement delivery pipelines. This is extremely important with modern processes that relies on heterogenous technologies (e.g. `npm` is optimized for building and packaging JavaScript application but this is a wrong tool to make cloud deployments - `cdk` shall be used). 
 
 As developer I want to have a **repeatable pipelines** so that exactly same automation pipeline is executed by CI/CD and myself while testing/development. This overlooked if your team follows segregation of application development from operations (DevOps). This also means co-allocation of pipelines configuration next to application code. 
 
-<!--
-TODO:
-  * Cloud Secret Management
-  * Privately Owned Build Environments
--->
+This bot helps to offload **privacy and secret management** to AWS services such as KMS, Secrets Manager or other. This feature allows you to host open-source applications with full automation on lifecycle management while retain confidentiality about your deployments. 
 
-Afterwords, CI/CD is not a rocket science. The market is full of various solution. Almost all cloud providers has they own, almost any software version control system offers they own. You have to choose a solution that suites your workflow. The Code Build Bot has been developed just to resolve my customization requirements. I'd like to have a depth sense of machinery that makes an automation.
+Afterwords, CI/CD is not a rocket science. The market is full of various solution. Almost all cloud providers has they own, almost any software version control system offers they own. You have to choose a solution that suites your workflow. The Code Build Bot has been developed just to resolve my customization requirements. I'd like to have a depth sense of machinery that makes an automation build with AWS serverless technology stack.
 
 
 ### Workflow
 
+Entire workflow does not differ at all from forking or branching. It just emphasis continuous **deployment** as a key feature along the workflow. It supports integration testing and helps to eliminate all related issues at earlier phases of feature delivery process:
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+1. The `master` branch of your project is always `latest` deployable snapshot of a software asset. The bot automates the `master` snapshot deployments every time when new feature is merged.
+
+2. The feature integration into `master` is implemented through pull request. The bot executes automated pull request deployment to sandbox environment every time a new changes is proposed by developers (each commit). The deployments happens after quality checks are successfully completed. The sandbox environment gives you possibility to execute integration tests.
+
+3. The merge of pull request triggers the deployment of `master` branch into the `latest` environment. Use this environment for features validation before delivery to live  
+
+4. The delivery of `latest` environment to live is automated using git tags. A provisioning a new tag caused an new immutable deployment of your application to live environment, which makes it compliant with green/blue deployment schemas.
 
 
-### Key features
+## Getting started
 
-* Check, Build and Carry your software to cloud without thinking about servers.
-* Uses AWS Serverless technologies: AWS Lambda, AWS Code Build, etc
-* Zero configuration (configure once)
+The latest version of the bot is available at its `master` branch. All development, including new features and bug fixes, take place on the `master` branch using forking and pull requests as described in contribution guidelines.
 
+The deployment requires TypeScript, AWS CDK and valid AWS credentials.
 
-## Requirements
-
-```
+```bash
 npm install -g aws-cdk typescript ts-node
 ```
 
-## Required Hooks
+You have to configure the bot behavior before the installation
 
-- Branch or tag deletion
-- Branch or tag creation
-- Pull requests
-- Pushes
+```bash
+##
+## Create a personal access token at GitHub with repo level permissions
+export GITHUB_TOKEN=deadbeefa1facecafe
+
+##
+## Allocate a api secret key to protect your api
+## https://developer.github.com/webhooks/securing/
+export API_KEY=secret
+```
+
+Use Makefile orchestration to build and deploy the bot to your account.
+
+```bash
+make
+
+## ...
+## CodeBuildBot: deploying...
+## CodeBuildBot: creating CloudFormation changeset...
+## ...
+## Outputs:
+##  CodeBuildBot.RestApiGatewayEndpoint = https://xxx.execute-api.eu-west-1.amazonaws.com/api/
+```
+
+Use Output endpoint as webhook for your repositories
+* Payload URL `https://xxx.execute-api.eu-west-1.amazonaws.com/api/webhook`
+* Content type `application/json`
+* Secret (value of API_KEY) `secret`
+* Pick individual events
+  - Branch or tag deletion
+  - Branch or tag creation
+  - Pull requests
+  - Pushes
+
+### Configure build environments
+
+A build environment is a docker container at your AWS ECR that contains all necessary utilities to execute your build. Please see [AWS samples](https://docs.aws.amazon.com/codebuild/latest/userguide/sample-docker-custom-image.html). A code snippet below show a minimal build environment for serverless TypeScript applications.
+
+```Dockerfile
+FROM amazonlinux:2.0.20190508
+
+RUN set -eu \
+    && curl --silent --location https://rpm.nodesource.com/setup_10.x | bash - \
+    && yum install -y nodejs \
+    && npm install -g typescript ts-node aws-cdk
+```
 
 
-## Environment
+## Licensee
 
-- process.env.NAMESPACE (ECR - default code-build, explain details)
-- process.env.GITHUB_TOKEN (Personal access token with repo permission )
-- process.env.API_KEY (https://developer.github.com/webhooks/securing/)
-
-
-
-
-
+[![See LICENSE](https://img.shields.io/github/license/fogfish/code-build-bot.svg?style=for-the-badge)](LICENSE)

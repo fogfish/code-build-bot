@@ -1,3 +1,10 @@
+//
+// Copyright (C) 2019 Dmitry Kolesnikov
+//
+// This file may be modified and distributed under the terms
+// of the MIT license.  See the LICENSE file for details.
+// https://github.com/fogfish/code-build-bot
+//
 import * as cdk from '@aws-cdk/core'
 import * as lambda from '@aws-cdk/aws-lambda'
 import * as api from '@aws-cdk/aws-apigateway'
@@ -32,6 +39,7 @@ function LogGroup(parent: cdk.Construct): cdk.Construct {
   return new logs.LogGroup(parent, 'LogGroup',
     {
       logGroupName: '/aws/codebuild/bot',
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
       retention: logs.RetentionDays.ONE_WEEK
     }
   )

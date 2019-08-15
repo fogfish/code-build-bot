@@ -1,4 +1,10 @@
 //
+// Copyright (C) 2019 Dmitry Kolesnikov
+//
+// This file may be modified and distributed under the terms
+// of the MIT license.  See the LICENSE file for details.
+// https://github.com/fogfish/code-build-bot
+//
 // @doc
 //   chat feature for build interface
 import * as type from './code-build-bot'
@@ -153,7 +159,6 @@ class Commit implements Say<type.Build> {
   constructor(state: State) {this.state = state}
 
   async say(build: type.Build, msg: Msg): Promise<type.WebHook> {
-    console.log("==> ", msg)
     const [owner, repo] = build.webhook.head.repository.split('/')
     const sha = build.webhook.head.commit
     const state = this.state

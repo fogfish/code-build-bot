@@ -1,3 +1,10 @@
+//
+// Copyright (C) 2019 Dmitry Kolesnikov
+//
+// This file may be modified and distributed under the terms
+// of the MIT license.  See the LICENSE file for details.
+// https://github.com/fogfish/code-build-bot
+//
 import * as cdk from '@aws-cdk/core'
 import * as iam from '@aws-cdk/aws-iam'
 
@@ -16,18 +23,6 @@ export function CodeBuildRole(parent: cdk.Construct): iam.Role {
   role.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("AmazonRoute53FullAccess"))
   role.addToPolicy(AllowLogsWrite())
   role.addToPolicy(AllowSecretManagerReadOnly())
-  return role
-}
-
-//
-//
-export function CodeDeployRole(parent: cdk.Construct): iam.Role {
-  const role = new iam.Role(parent, 'CodeDeployRole',
-    {
-      assumedBy: new iam.ServicePrincipal('codebuild.amazonaws.com')
-    }
-  )
-
   return role
 }
 
