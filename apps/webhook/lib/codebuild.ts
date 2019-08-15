@@ -47,8 +47,9 @@ export namespace codebuild {
     return Config.codebuild.createProject({
       name: name,
       source: {
-        type: "GITHUB",
-        location: build.webhook.url
+        type: 'GITHUB',
+        location: build.webhook.url,
+        auth: {type: 'PERSONAL_ACCESS_TOKEN', resource: Config.GITHUB_TOKEN}
       },
       artifacts: {
         type: "NO_ARTIFACTS"

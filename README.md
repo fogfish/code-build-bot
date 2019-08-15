@@ -79,16 +79,6 @@ make
 ##  CodeBuildBot.RestApiGatewayEndpoint = https://xxx.execute-api.eu-west-1.amazonaws.com/api/
 ```
 
-Use Output endpoint as webhook for your repositories
-* Payload URL `https://xxx.execute-api.eu-west-1.amazonaws.com/api/webhook`
-* Content type `application/json`
-* Secret (value of API_KEY) `secret`
-* Pick individual events
-  - Branch or tag deletion
-  - Branch or tag creation
-  - Pull requests
-  - Pushes
-
 ### Configure build environments
 
 A build environment is a docker container at your AWS ECR that contains all necessary utilities to execute your build. Please see [AWS samples](https://docs.aws.amazon.com/codebuild/latest/userguide/sample-docker-custom-image.html). A code snippet below show a minimal build environment for serverless TypeScript applications.
@@ -101,6 +91,31 @@ RUN set -eu \
     && yum install -y nodejs \
     && npm install -g typescript ts-node aws-cdk
 ```
+
+### Configure projects
+
+Use Output endpoint as webhook for your repositories
+
+* Payload URL `https://xxx.execute-api.eu-west-1.amazonaws.com/api/webhook`
+* Content type `application/json`
+* Secret (value of API_KEY) `secret`
+* Pick individual events
+  - Branch or tag deletion
+  - Branch or tag creation
+  - Pull requests
+  - Pushes
+
+Add `.codebuild.json` to your project. The file supports auto-configuration of CodeBuild projects to your account
+
+```javascript
+{
+   "image": "code-build/serverless",
+   "approver": ["fogfish"]
+}
+```
+
+* `image` - reference to build environment
+* `approver` - users who's contribution is automatically deployed 
 
 
 ## Licensee

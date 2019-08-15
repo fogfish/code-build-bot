@@ -38,7 +38,8 @@ function CodeBuildEvents(parent: cdk.Construct): events.Rule {
 function LogGroup(parent: cdk.Construct): cdk.Construct {
   return new logs.LogGroup(parent, 'LogGroup',
     {
-      logGroupName: '/aws/codebuild/bot',
+      // TODO:
+      // logGroupName: '/aws/codebuild/bot',
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       retention: logs.RetentionDays.ONE_WEEK
     }
