@@ -1,4 +1,4 @@
 {
-  "app": "ts-node src/app",
+  "app": "ts-node src/aws",
   "requireApproval": "never"
 }
