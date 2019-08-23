@@ -7,50 +7,67 @@
 //
 import * as cdk from '@aws-cdk/core'
 import * as iam from '@aws-cdk/aws-iam'
+import { IaaC, use } from 'aws-cdk-pure'
+import * as cloud from './cloud' 
 
 //
 //
-export function CodeBuildRole(parent: cdk.Construct): iam.Role {
-  const role = new iam.Role(parent, 'CodeBuildRole',
-    {
-      assumedBy: new iam.ServicePrincipal('codebuild.amazonaws.com')
-    }
-  )
-  role.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("AWSCloudFormationFullAccess"))
-  role.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("AWSLambdaFullAccess"))
-  role.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("AmazonAPIGatewayAdministrator"))
-  role.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("IAMFullAccess"))
-  role.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("AmazonRoute53FullAccess"))
-  role.addToPolicy(AllowLogsWrite())
-  role.addToPolicy(AllowSecretManagerReadOnly())
-  return role
+function CodeBuildRole(): iam.RoleProps {
+  return {
+    assumedBy: new iam.ServicePrincipal('codebuild.amazonaws.com'),
+  }
+}
+
+export function CodeBuild(): IaaC<iam.Role> {
+  const role = cloud.role(CodeBuildRole)
+  return use({ role })
+    .effect(x => {
+      x.role.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("AWSCloudFormationFullAccess"))
+      x.role.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("AWSLambdaFullAccess"))
+      x.role.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("AmazonAPIGatewayAdministrator"))
+      x.role.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("IAMFullAccess"))
+      x.role.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("AmazonRoute53FullAccess"))
+      x.role.addToPolicy(AllowLogsWrite())
+      x.role.addToPolicy(AllowSecretManagerReadOnly())
+    })
+    .yield('role')
 }
 
 //
 //
-export function WebHookRole(parent: cdk.Construct): iam.Role {
-  const role = new iam.Role(parent, 'WebHookRole',
-    {
-      assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com')
-    }
-  )
-  role.addToPolicy(AllowCodeBuildAll())
-  role.addToPolicy(AllowLogsWrite())
-  role.addToPolicy(AllowIAMConfig())
-  return role
+function WebHookRole(): iam.RoleProps {
+  return {
+    assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com')
+  }
+}
+
+export function WebHook(): IaaC<iam.Role> {
+  const role = cloud.role(WebHookRole)
+  return use({ role })
+    .effect(x => {
+      x.role.addToPolicy(AllowCodeBuildAll())
+      x.role.addToPolicy(AllowLogsWrite())
+      x.role.addToPolicy(AllowIAMConfig())
+    })
+    .yield('role')
 }
 
 //
 //
-export function SupervisorRole(parent: cdk.Construct): iam.Role {
-  const role = new iam.Role(parent, 'SupervisorRole',
-    {
-      assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com')
-    }
-  )
-  role.addToPolicy(AllowCodeBuildAll())
-  role.addToPolicy(AllowLogsWrite())
-  return role
+function SupervisorRole(): iam.RoleProps {
+  return {
+    assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com')
+  }
+}
+
+export function Supervisor(): IaaC<iam.Role> {
+  const role = cloud.role(SupervisorRole)
+  return use({ role })
+    .effect(x => {
+      x.role.addToPolicy(AllowCodeBuildAll())
+      x.role.addToPolicy(AllowLogsWrite())
+    })
+    .yield('role')
 }
 
 //
