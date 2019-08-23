@@ -11,7 +11,7 @@ import * as api from '@aws-cdk/aws-apigateway'
 import * as logs from '@aws-cdk/aws-logs'
 import * as events from '@aws-cdk/aws-events'
 import * as security from './security'
-import { IaaC, root, join, flat, use } from './pure'
+import { IaaC, root, join, flat, use } from 'aws-cdk-pure'
 import * as cloud from './cloud'
 
 //
@@ -46,7 +46,6 @@ function LogGroup(): logs.LogGroupProps {
 function WebHook(parent: cdk.Construct): lambda.FunctionProps {
   const namespace = process.env.NAMESPACE || 'code-build'
   const role = security.CodeBuildRole(parent)
-  //return new lambda.Function(parent, 'WebHook',
   return {
       runtime: lambda.Runtime.NODEJS_10_X,
       code: new lambda.AssetCode('../apps/webhook'),
@@ -58,8 +57,7 @@ function WebHook(parent: cdk.Construct): lambda.FunctionProps {
         'GITHUB_TOKEN': process.env.GITHUB_TOKEN,
         'API_KEY': process.env.API_KEY
       }
-    }
-  //)
+  }
 }
 
 function Supervisor(parent: cdk.Construct): lambda.FunctionProps {

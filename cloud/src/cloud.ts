@@ -3,10 +3,8 @@ import { LambdaFunction } from '@aws-cdk/aws-events-targets'
 import { RestApi, LambdaIntegration } from '@aws-cdk/aws-apigateway'
 import { LogGroup } from '@aws-cdk/aws-logs';
 import { Rule } from '@aws-cdk/aws-events';
-import { iaac, wrap } from './pure'
+import { iaac, wrap } from 'aws-cdk-pure'
 import { Stack } from '@aws-cdk/core';
-
-export const stack = iaac(Stack)
 
 export const lambda = iaac(Function)
 
