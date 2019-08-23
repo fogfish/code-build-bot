@@ -28,85 +28,116 @@ import { Construct, App, Stack } from '@aws-cdk/core'
 //
 export type IaaC<T> = (parent: Construct) => T
 
-interface Node<Prop, Type> {
-  new (scope: Construct, id: string, props: Prop): Type
-}
-
-interface Wrap<Prop, TypeA, TypeB> {
-  new (node: TypeA, props?: Prop): TypeB;
-}
-
 //
 //
+type Node<Prop, Type> = new (scope: Construct, id: string, props: Prop) => Type
+// interface Node<Prop, Type> {
+//   new (scope: Construct, id: string, props: Prop): Type
+// }
+
+/**
+ * type safe cloud component factory. It takes a class constructor of "cloud component" 
+ * as input and returns another function, which builds a type-safe association between 
+ * "cloud component" and its property.
+ * 
+ * @param f "cloud component" class constructor 
+ * @param iaac purely functional definition of the component
+ */
 export function iaac<Prop, Type>(f: Node<Prop, Type>): (iaac: IaaC<Prop>) => IaaC<Type> {
   return (iaac) => (scope) => new f(scope, iaac.name, iaac(scope))
 }
 
+//
+//
+interface Wrap<Prop, TypeA, TypeB> {
+  new (scope: TypeA, props?: Prop): TypeB;
+}
+
+/**
+ * type safe cloud component factory for integrations
+ * 
+ * @param f "cloud component" class constructor
+ * @param iaac purely functional definition of the component
+ */
 export function wrap<Prop, TypeA, TypeB>(f: Wrap<Prop, TypeA, TypeB>): (iaac: IaaC<TypeA>) => IaaC<TypeB> {
-  return (iaac) => (node) => new f(iaac(node))
+  return (iaac) => (scope) => new f(iaac(scope))
 }
 
-export function map<O extends { [key: string]: any }>(fn: (x: O) => void, iaac: IaaC<O>): IaaC<O> {
-  return (node) => {
-    const x = iaac(node)
-    fn(x)
-    return x
-  }
-}
+//
+//
+type Product<T> = {[K in keyof T]: IaaC<T[K]>}
+type Pairs<T> = {[K in keyof T]: T[K]}
 
-// export function for2<O extends Record<keyof T, any>>(c: { [K in keyof O]: IaaC<O[K]> }): IaaC<O> {
-//   return (node) => {
-//     return Object.keys(c).reduce(
-//       (acc, k) => {
-//         // console.log(c[k](node))
-//         acc[k] = c[k](node)
-//         return acc
-//       },
-//       {} as O
-//     )
-//   }
-// }
-
-export function for2<T extends Record<keyof T, IaaC<any>>>(obj: T): IaaC<Record<keyof T, any>> {
-  return (node) => {
-    const objectClone = {} as T;
-
-    const ownKeys = Reflect.ownKeys(obj) as (keyof T)[];
-    for (const prop of ownKeys) {
-      objectClone[prop] = obj[prop](node);
+function _compose<T extends Pairs<T>>(iaac: Product<T>): IaaC<Pairs<T>> {
+  return (scope) => {
+    const value = {} as T
+    const keys = Reflect.ownKeys(iaac) as (keyof T)[]
+    for (const key of keys) {
+      value[key] = iaac[key](scope)
     }
-
-    return objectClone;
+    return value
   }
 }
 
-export function yield1<T extends { [key: string]: any }, K extends keyof T>(k: K, c: IaaC<T>): IaaC<T[K]> {
+function _effect<O extends Pairs<O>>(eff: (x: O) => void, iaac: IaaC<O>): IaaC<O> {
+  return (scope) => {
+    const node = iaac(scope)
+    eff(node)
+    return node
+  }
+}
+
+function _yield<T extends Pairs<T>, K extends keyof T>(k: K, c: IaaC<T>): IaaC<T[K]> {
   return (node) => c(node)[k]
 }
 
+class Effect<T extends Pairs<T>> {
+  value: IaaC<T>
+  constructor(x: IaaC<T>){this.value = x}
 
+  effect(f: (x:T) => void): Effect<T> {
+    return new Effect(_effect(f, this.value))
+  }
+
+  yield<K extends keyof T>(k: K): IaaC<T[K]> {
+    return _yield(k, this.value)
+  } 
+}
+
+/**
+ * 
+ * @param x 
+ */
+export function use<T extends Pairs<T>>(resources: Product<T>): Effect<T> {
+  return new Effect(_compose(resources))
+}
+
+/**
+ * 
+ * @param fn 
+ */
 export function flat<T>(fn: IaaC<IaaC<T>>): IaaC<T> {
-  return (node) => fn(node)(node)
+  return (scope) => fn(scope)(scope)
 }
 
-export function join<T>(scope: Construct, fn: IaaC<T>): T {
-  return fn(scope)
+/**
+ * attaches the pure definition of resource to the stack nodes
+ * 
+ * @param scope the "parent" context
+ * @param iaac purely functional definition of the component
+ */
+export function join<T>(scope: Construct, iaac: IaaC<T>): T {
+  return iaac(scope)
 }
 
-//
-//
-export function _<T>(parent: Construct, ...fns: Array<IaaC<T>>): Construct {
-  fns.forEach(
-    fn => {
-      parent instanceof App 
-        ? fn(new Stack(parent, fn.name))
-        : fn(new Construct(parent, fn.name))
-    }
-  )
-  return parent
-}
-
-export function add<T>(node: App, fn: IaaC<T>, name?: string): Construct {
-  fn(new Stack(node, name || fn.name));
-  return node;
+/**
+ * Attaches the pure stack components to the root of CDK application.
+ * 
+ * @param root the root of an entire CDK application 
+ * @param iaac purely functional definition of the stack  
+ * @param name optionally the logical of the stack
+ */
+export function root<T>(root: App, iaac: IaaC<T>, name?: string): App {
+  iaac(new Stack(root, name || iaac.name));
+  return root;
 }

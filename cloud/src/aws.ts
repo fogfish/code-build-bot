@@ -11,7 +11,7 @@ import * as api from '@aws-cdk/aws-apigateway'
 import * as logs from '@aws-cdk/aws-logs'
 import * as events from '@aws-cdk/aws-events'
 import * as security from './security'
-import { _, map, IaaC, join, flat, for2, yield1 } from './pure'
+import { IaaC, root, join, flat, use } from './pure'
 import * as cloud from './cloud'
 
 //
@@ -92,17 +92,12 @@ function Gateway(): api.RestApiProps {
 function RestApi(): IaaC<api.RestApi> {
   const restapi = cloud.gateway(Gateway)
   const webhook = cloud.resource(cloud.lambda(WebHook))
-
-  const x = for2({ restapi, webhook })
-
-  return yield1('restapi', map(
-    (a) => {
-      a.restapi.root.addResource('webhook').addMethod('POST', a.webhook)
-      return a
-    },
-    x
-  ))
-
+  
+  return use({ restapi, webhook })
+    .effect(
+      x => x.restapi.root.addResource('webhook').addMethod('POST', x.webhook)
+    )
+    .yield('restapi')
 }
 
 //
@@ -115,5 +110,5 @@ function CodeBuildBot(stack: cdk.Construct): cdk.Construct {
 }
 
 const app = new cdk.App()
-_(app, CodeBuildBot)
+root(app, CodeBuildBot)
 app.synth()
