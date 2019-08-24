@@ -49,7 +49,7 @@ export namespace codebuild {
       source: {
         type: 'GITHUB',
         location: build.webhook.url,
-        auth: {type: 'PERSONAL_ACCESS_TOKEN', resource: Config.GITHUB_TOKEN}
+        auth: {type: 'OAUTH', resource: Config.GITHUB_TOKEN}
       },
       artifacts: {
         type: "NO_ARTIFACTS"

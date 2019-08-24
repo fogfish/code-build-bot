@@ -14,7 +14,7 @@ import * as cloud from './cloud'
 
 
 export function RestApi(): IaaC<api.RestApi> {
-  const restapi = cloud.gateway(Gateway)
+  const restapi = cloud.gateway(CodeBuildApi)
   const webhook = cloud.resource(cloud.lambda(WebHook))
   
   return use({ restapi, webhook })
@@ -24,7 +24,7 @@ export function RestApi(): IaaC<api.RestApi> {
     .yield('restapi')
 }
 
-function Gateway(): api.RestApiProps {
+function CodeBuildApi(): api.RestApiProps {
   return {
     deploy: true,
     deployOptions: {
