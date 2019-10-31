@@ -8,49 +8,92 @@
 import * as cdk from '@aws-cdk/core'
 import * as api from '@aws-cdk/aws-apigateway'
 import * as lambda from '@aws-cdk/aws-lambda'
-import * as security from './security'
-import { IaaC, use } from 'aws-cdk-pure'
-import * as cloud from './cloud'
+import * as iam from '@aws-cdk/aws-iam'
+import * as pure from 'aws-cdk-pure'
+import * as codebuild from './codebuild'
 
 
-export function RestApi(): IaaC<api.RestApi> {
-  const restapi = cloud.gateway(CodeBuildApi)
-  const webhook = cloud.resource(cloud.lambda(WebHook))
-  
-  return use({ restapi, webhook })
-    .effect(
-      x => x.restapi.root.addResource('webhook').addMethod('POST', x.webhook)
-    )
-    .yield('restapi')
-}
+export const Gateway = (): pure.IPure<api.RestApi> =>
+  pure.use({
+    restapi: RestApi(),
+    webhook: WebHook(),
+  }).effect(
+    x => x.restapi.root.addResource('webhook').addMethod('POST', x.webhook)
+  ).yield('restapi')
 
-function CodeBuildApi(): api.RestApiProps {
-  return {
-    deploy: true,
-    deployOptions: {
-      stageName: 'api'
-    },
-    failOnWarnings: true,
-    endpointTypes: [api.EndpointType.REGIONAL]
-  }
+//
+//
+const RestApi = (): pure.IPure<api.RestApi> => {
+  const iaac = pure.iaac(api.RestApi)
+  const CodeBuildApi = (): api.RestApiProps => 
+    ({
+      deploy: true,
+      deployOptions: {
+        stageName: 'api'
+      },
+      failOnWarnings: true,
+      endpointTypes: [api.EndpointType.REGIONAL]
+    })
+  return iaac(CodeBuildApi)
 }
 
 //
 //
-function WebHook(parent: cdk.Construct): lambda.FunctionProps {
-  const namespace = process.env.NAMESPACE || 'code-build'
-  const role = security.WebHook()
-  const codebuild = security.CodeBuild()
-  return {
+const WebHook = (): pure.IPure<api.LambdaIntegration> =>
+  pure.use({
+    roleLambda: Role(),
+    roleCodeBuild: codebuild.Role()
+  }).flatMap(
+    x => ({ lambda: CodeBuildHook(x.roleLambda, x.roleCodeBuild) })
+  ).yield('lambda')
+
+
+const CodeBuildHook = (role: iam.IRole, roleCodeBuild: iam.IRole): pure.IPure<api.LambdaIntegration> => {
+  const wrap = pure.wrap(api.LambdaIntegration)
+  const iaac = pure.iaac(lambda.Function)
+  const WebHook = (): lambda.FunctionProps => 
+    ({
       runtime: lambda.Runtime.NODEJS_10_X,
       code: new lambda.AssetCode('../apps/webhook'),
       handler: 'webhook.main',
-      role: role(parent),
+      role,
       environment: {
-        'CODE_BUILD_BASE': `${cdk.Aws.ACCOUNT_ID}.dkr.ecr.${cdk.Aws.REGION}.amazonaws.com/${namespace}`,
-        'CODE_BUILD_ROLE': codebuild(parent).roleName,
+        'CODE_BUILD_BASE': `${cdk.Aws.ACCOUNT_ID}.dkr.ecr.${cdk.Aws.REGION}.amazonaws.com/${process.env.NAMESPACE || 'code-build'}`,
+        'CODE_BUILD_ROLE': roleCodeBuild.roleName,
         'GITHUB_TOKEN': process.env.GITHUB_TOKEN,
         'API_KEY': process.env.API_KEY
       }
-  }
+    })
+  
+  return wrap(iaac(WebHook))
 }
+
+//
+//
+const Role = (): pure.IPure<iam.Role> =>
+  pure.iaac(iam.Role)(WebHookRole)
+    .effect(x => x.addToPolicy(AllowCodeBuild()))
+    .effect(x => x.addToPolicy(AllowLogsWrite()))
+    .effect(x => x.addToPolicy(AllowIAMConfig()))
+
+
+const WebHookRole = (): iam.RoleProps =>
+  ({ assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com') })
+
+const AllowLogsWrite = (): iam.PolicyStatement =>
+  new iam.PolicyStatement({
+    resources: ['*'],
+    actions: ['logs:CreateLogGroup', 'logs:CreateLogStream', 'logs:PutLogEvents'],
+  })
+
+const AllowCodeBuild = (): iam.PolicyStatement =>
+  new iam.PolicyStatement({
+    resources: ['*'],
+    actions: ['codebuild:*']
+  })
+
+const AllowIAMConfig = (): iam.PolicyStatement =>
+  new iam.PolicyStatement({
+    resources: [`arn:aws:iam::${cdk.Aws.ACCOUNT_ID}:role/CodeBuildBot-*`],
+    actions: ['iam:GetRole', 'iam:PassRole']
+  })

@@ -1,0 +1,99 @@
+//
+// Copyright (C) 2019 Dmitry Kolesnikov
+//
+// This file may be modified and distributed under the terms
+// of the MIT license.  See the LICENSE file for details.
+// https://github.com/fogfish/code-build-bot
+//
+import * as pure from 'aws-cdk-pure'
+import * as events from '@aws-cdk/aws-events'
+import * as target from '@aws-cdk/aws-events-targets'
+import * as lambda from '@aws-cdk/aws-lambda'
+import * as iam from '@aws-cdk/aws-iam'
+
+export const Supervisor = (): pure.IPure<events.IRule> =>
+  pure.wrap(target.LambdaFunction)(
+    pure.iaac(iam.Role)(SupervisorRole)
+    .effect(x => x.addToPolicy(AllowLogsWrite()))
+    .effect(x => x.addToPolicy(AllowCodeBuild()))
+    .flatMap(Lambda)
+  ).flatMap(CloudWatchRule)
+    
+
+//
+const SupervisorRole = (): iam.RoleProps =>
+  ({ assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com') })
+
+const AllowLogsWrite = (): iam.PolicyStatement =>
+  new iam.PolicyStatement({
+    resources: ['*'],
+    actions: ['logs:CreateLogGroup', 'logs:CreateLogStream', 'logs:PutLogEvents'],
+  })
+
+const AllowCodeBuild = (): iam.PolicyStatement =>
+  new iam.PolicyStatement({
+    resources: ['*'],
+    actions: ['codebuild:*']
+  })
+
+//
+const Lambda = (role: iam.IRole): pure.IPure<lambda.Function> => {
+  const iaac = pure.iaac(lambda.Function)
+  const CodeBuildSup = (): lambda.FunctionProps =>
+  ({
+    runtime: lambda.Runtime.NODEJS_10_X,
+    code: new lambda.AssetCode('../apps/webhook'),
+    handler: 'supervisor.main',
+    role,
+    environment: { 'GITHUB_TOKEN': process.env.GITHUB_TOKEN }
+  })
+  return iaac(CodeBuildSup)
+}
+
+
+
+//
+const CloudWatchRule = (f: target.LambdaFunction): pure.IPure<events.Rule> => {
+  const iaac = pure.iaac(events.Rule)
+  const CodeBuildRule = (): events.RuleProps =>
+  ({
+    enabled: true,
+    eventPattern: {
+      source: ['aws.codebuild'],
+      detailType: ['CodeBuild Build State Change'],
+      detail: {
+        'build-status': ['IN_PROGRESS', 'SUCCEEDED', 'FAILED', 'STOPPED']
+      }
+    },
+    targets: [f]
+  })
+  return iaac(CodeBuildRule)
+} 
+
+//
+//
+export const Role = (): pure.IPure<iam.IRole> =>
+  pure.iaac(iam.Role)(CodeBuildRole)
+    .effect(x => x.addManagedPolicy(AWSCloudFormationFullAccess))
+    .effect(x => x.addManagedPolicy(AWSLambdaFullAccess))
+    .effect(x => x.addManagedPolicy(AmazonAPIGatewayAdministrator))
+    .effect(x => x.addManagedPolicy(IAMFullAccess))
+    .effect(x => x.addManagedPolicy(AmazonRoute53FullAccess))
+    .effect(x => x.addToPolicy(AllowLogsWrite()))
+    .effect(x => x.addToPolicy(AllowSecretManagerReadOnly()))
+
+
+const CodeBuildRole = (): iam.RoleProps =>
+  ({ assumedBy: new iam.ServicePrincipal('codebuild.amazonaws.com') })
+
+const AWSCloudFormationFullAccess = iam.ManagedPolicy.fromAwsManagedPolicyName("AWSCloudFormationFullAccess")
+const AWSLambdaFullAccess = iam.ManagedPolicy.fromAwsManagedPolicyName("AWSLambdaFullAccess")
+const AmazonAPIGatewayAdministrator = iam.ManagedPolicy.fromAwsManagedPolicyName("AmazonAPIGatewayAdministrator")
+const IAMFullAccess = iam.ManagedPolicy.fromAwsManagedPolicyName("IAMFullAccess")
+const AmazonRoute53FullAccess = iam.ManagedPolicy.fromAwsManagedPolicyName("AmazonRoute53FullAccess")
+
+const AllowSecretManagerReadOnly = (): iam.PolicyStatement =>
+  new iam.PolicyStatement({
+    resources: ['*'],
+    actions: ['secretsmanager:GetSecretValue']
+  })

@@ -22,6 +22,6 @@
     "@aws-cdk/aws-lambda": "*",
     "@aws-cdk/aws-logs": "*",
     "@aws-cdk/core": "*",
-    "aws-cdk-pure": "^1.0.0"
+    "aws-cdk-pure": "^1.2.4"
   }
 }
