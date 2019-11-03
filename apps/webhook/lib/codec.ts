@@ -29,7 +29,7 @@ export function decodeCodeBuild(json: type.Json): type.Build | undefined {
     .reduce((acc: any, x: any) => ({...acc, [x.name]: x.value}), {})
   const webhook = <type.WebHook>JSON.parse(env.WEBHOOK)
 
-  switch (env.BUILD) {
+  switch (env.BUILD_TYPE) {
     case 'PullRequest':
       return new type.PullRequestBuild(webhook)
     case 'CleanUp':

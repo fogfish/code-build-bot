@@ -115,9 +115,13 @@ class BugReport implements Say<type.Build> {
     const number = build.webhook.issue.number
     const title = `${this.prefix} of PR ${number} is failed.`
     const body = `
-### CI: failure
+#### Code Build Bot
+\`\`\`diff
+- failure ${msg.topic}
+\`\`\`
 * Pull Request: #${number}
-* Commit ID: ${build.webhook.head}
+* Branch: ${build.webhook.head.branch}
+* Commit: ${build.webhook.head.commit}
 * [Build Logs](${msg.logs})
 
 \`\`\`javascript
@@ -143,21 +147,36 @@ class Comment implements Say<type.Build> {
   async say(build: type.Build, msg: Msg): Promise<type.WebHook> {
     const [owner, repo] = build.webhook.base.repository.split('/')
     const issue_number = build.webhook.issue.number
-    const message = () =>
-      !msg.text ? '' : `
+    const message = !msg.text ? '' : `
 \`\`\`javascript
 ${msg.text}
 \`\`\`
 `
+    const symb = () => {
+      switch(this.state) {
+      case 'pending':
+        return '!'
+      case 'success':
+        return '+'
+      case 'failure':
+        return '-'
+      default:
+        return '#'
+      }
+    }
+
     const body = `
-### CI: ${this.state}
-* ${msg.topic}
+#### Code Build Bot
+\`\`\`diff
+${symb()} ${this.state} ${msg.topic}
+\`\`\`
 * Pull Request: #${issue_number}
-* Commit ID: ${build.webhook.head}
+* Branch: ${build.webhook.head.branch}
+* Commit: ${build.webhook.head.commit}
 * [Build Logs](${msg.logs})
 
 
-${message()}
+${message}
 `
 
     return Config.github.issues

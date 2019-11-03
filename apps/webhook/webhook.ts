@@ -41,10 +41,24 @@ async function webhook(build: type.Build): Promise<Response> {
     build.webhook = await chat.sayBuildPending(build, {topic: 'build'})
     await codebuild.config(build)
 
-    if (build.type !== 'PullRequest') {
-      await codebuild.build(build)
-    } if (build.type == 'CleanUp') { 
-      await codebuild.clean(build)
+    if (build.type === 'Release') {
+      await codebuild.spec(build, 'carryspec.yml')
+        .then(x => x 
+          ? codebuild.carry(build)
+          : Promise.resolve('undefined')
+        )
+    } else if (build.type === 'CleanUp') {
+      await codebuild.spec(build, 'cleanspec.yml')
+        .then(x => x 
+          ? codebuild.clean(build)
+          : Promise.resolve('undefined')
+        )
+    } else if (build.type === 'Master') {
+      await codebuild.spec(build, 'buildspec.yml')
+        .then(x => x 
+          ? codebuild.build(build)
+          : Promise.resolve('undefined')
+        )
     } else {
       const spec = await codebuild.file(build, '.codebuild.json')
       if (spec.approver && spec.approver.indexOf(build.webhook.head.developer) !== -1) {

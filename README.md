@@ -47,7 +47,7 @@ Entire workflow does not differ at all from forking or branching. It just emphas
 
 The latest version of the bot is available at its `master` branch. All development, including new features and bug fixes, take place on the `master` branch using forking and pull requests as described in contribution guidelines.
 
-The deployment requires TypeScript, AWS CDK and valid AWS credentials.
+CodeBuildBot deployment requires TypeScript, AWS CDK and valid AWS credentials.
 
 ```bash
 npm install -g aws-cdk typescript ts-node
@@ -71,7 +71,7 @@ export API_KEY=secret
 export CI_DOMAIN=example.com
 ```
 
-Use Makefile orchestration to build and deploy the bot to your account.
+Use Makefile orchestration to build and deploy the bot to your AWS account.
 
 ```bash
 make
@@ -97,11 +97,16 @@ RUN set -eu \
     && npm install -g typescript ts-node aws-cdk
 ```
 
+CodeBuildBot provides few production ready build environments:
+* [docker](https://github.com/fogfish/code-build-docker) to assembly and publish docker images.
+* [serverless](https://github.com/fogfish/code-build-serverless) to test, build and deploy serverless applications. 
+
+
 ### Configure projects
 
-Use Output endpoint as webhook for your repositories
+Configure the WebHook for your repositories
 
-* Payload URL `https://ci.example.com/api/webhook`
+* Payload URL `https://ci.example.com/webhook`
 * Content type `application/json`
 * Secret (value of API_KEY) `secret`
 * Pick individual events
@@ -110,18 +115,24 @@ Use Output endpoint as webhook for your repositories
   - Pull requests
   - Pushes
 
-Add `.codebuild.json` to your project. The file supports auto-configuration of CodeBuild projects to your account
+Add `.codebuild.json` to your project. The file supports auto-configuration of CodeBuild projects to your account, which is created during the first build. 
 
 ```javascript
 {
-   "image": "code-build/serverless",
-   "approver": ["fogfish"]
+  // reference to build environment
+  "image": "code-build/serverless",
+
+  // users who's contribution is automatically deployed
+  // you can disable deployments if the list is empty
+  "approver": ["fogfish"]
 }
 ```
 
-* `image` - reference to build environment
-* `approver` - users who's contribution is automatically deployed 
-
+Then, it is **required** to define build pipelines using [build specification](https://docs.aws.amazon.com/en_pv/codebuild/latest/userguide/build-spec-ref.html). The CodeBuildBot supports following pipelines
+* `checkspec.yml` checks quality of the pull request. The Bot executes the pipeline for each pull request and they commits if they are originated from external developers. 
+* `buildspec.yml` builds and deploys software assets. The Bot executes the pipeline for each pull request, they commits and master branch events.
+* `cleanspec.yml` cleans software deployments when pull request is merged to master branch.
+* `carryspec.yml` carries the software assets to live environment. The Bot executes the pipeline when any branch is tagged (released) by the owner.  
 
 ## Licensee
 

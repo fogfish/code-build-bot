@@ -41,6 +41,17 @@ export namespace codebuild {
       })
   }
 
+  export async function spec(build: type.Build, path: string): Promise<boolean> {
+    const [owner, repo] = build.webhook.head.repository.split('/')
+    const ref = build.webhook.head.commit
+
+    return Config.github.repos
+      .getContents({owner, repo, path, ref})
+      .then(x => {
+        return x.status === 200
+      })
+  }
+
   //
   async function create(build: type.Build, spec: type.CodeBuildSpec): Promise<type.Json> {
     const name = nameCodeBuild(build.webhook.base.repository)
@@ -95,13 +106,18 @@ export namespace codebuild {
     return run(build, 'cleanspec.yml')
   }
 
+  export async function carry(build: type.Build): Promise<type.URL> {
+    return run(build, 'carryspec.yml')
+  }
+
   async function run(build: type.Build, buildspec: string): Promise<type.URL> {
     const name = nameCodeBuild(build.webhook.base.repository)
     const vars = [
       {name: 'WEBHOOK', value: JSON.stringify(build.webhook)},
-      {name: "BUILD_ISSUE", value: String(build.webhook.issue.number)},
-      {name: "BUILD_COMMIT", value: build.webhook.head.commit},
-      {name: "BUILD_RELEASE", value: build.webhook.release}
+      {name: 'BUILD_TYPE', value: build.type},
+      {name: 'BUILD_ISSUE', value: String(build.webhook.issue.number)},
+      {name: 'BUILD_COMMIT', value: build.webhook.head.commit},
+      {name: 'BUILD_RELEASE', value: build.webhook.release}
     ]
     return Config.codebuild.startBuild({
         projectName: name,

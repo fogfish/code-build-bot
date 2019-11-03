@@ -30,6 +30,8 @@ export async function main(json: type.Json): Promise<type.Json> {
         {topic: 'bot failed', text: 'check either repository or bot config'})
       throw reason
     }
+  } else {
+    throw new Error('Unable to decode build spec.')
   }
 
   return Promise.resolve({})
