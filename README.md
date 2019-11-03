@@ -98,8 +98,8 @@ RUN set -eu \
 ```
 
 CodeBuildBot provides few production ready build environments:
-* [docker](https://github.com/fogfish/code-build-docker) to assembly and publish docker images.
-* [serverless](https://github.com/fogfish/code-build-serverless) to test, build and deploy serverless applications. 
+* [docker](https://github.com/fogfish/code-build-docker) assemblies and publishes docker images.
+* [serverless](https://github.com/fogfish/code-build-serverless) tests, builds and deploys serverless applications. 
 
 
 ### Configure projects
