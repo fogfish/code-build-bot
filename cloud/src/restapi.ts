@@ -10,12 +10,12 @@ import * as api from '@aws-cdk/aws-apigateway'
 import * as lambda from '@aws-cdk/aws-lambda'
 import * as iam from '@aws-cdk/aws-iam'
 import * as pure from 'aws-cdk-pure'
+import { gateway } from 'aws-cdk-pure-hoc'
 import * as codebuild from './codebuild'
 
-
-export const Gateway = (): pure.IPure<api.RestApi> =>
+export const Gateway = (): pure.IPure<api.RestApi> => 
   pure.use({
-    restapi: RestApi(),
+    restapi: gateway.Api({ subdomain: 'ci', domain: process.env.CI_DOMAIN || 'example.com' }),
     webhook: WebHook(),
   }).effect(
     x => x.restapi.root.addResource('webhook').addMethod('POST', x.webhook)
@@ -23,6 +23,7 @@ export const Gateway = (): pure.IPure<api.RestApi> =>
 
 //
 //
+/*
 const RestApi = (): pure.IPure<api.RestApi> => {
   const iaac = pure.iaac(api.RestApi)
   const CodeBuildApi = (): api.RestApiProps => 
@@ -36,6 +37,7 @@ const RestApi = (): pure.IPure<api.RestApi> => {
     })
   return iaac(CodeBuildApi)
 }
+*/
 
 //
 //
@@ -51,6 +53,9 @@ const WebHook = (): pure.IPure<api.LambdaIntegration> =>
 const CodeBuildHook = (role: iam.IRole, roleCodeBuild: iam.IRole): pure.IPure<api.LambdaIntegration> => {
   const wrap = pure.wrap(api.LambdaIntegration)
   const iaac = pure.iaac(lambda.Function)
+  const namespace = process.env.NAMESPACE || 'code-build'
+  const githubToken = process.env.GITHUB_TOKEN || 'undefined'
+  const apiSecret = process.env.API_KEY || 'secret'
   const WebHook = (): lambda.FunctionProps => 
     ({
       runtime: lambda.Runtime.NODEJS_10_X,
@@ -58,10 +63,10 @@ const CodeBuildHook = (role: iam.IRole, roleCodeBuild: iam.IRole): pure.IPure<ap
       handler: 'webhook.main',
       role,
       environment: {
-        'CODE_BUILD_BASE': `${cdk.Aws.ACCOUNT_ID}.dkr.ecr.${cdk.Aws.REGION}.amazonaws.com/${process.env.NAMESPACE || 'code-build'}`,
+        'CODE_BUILD_BASE': `${cdk.Aws.ACCOUNT_ID}.dkr.ecr.${cdk.Aws.REGION}.amazonaws.com/${namespace}`,
         'CODE_BUILD_ROLE': roleCodeBuild.roleName,
-        'GITHUB_TOKEN': process.env.GITHUB_TOKEN,
-        'API_KEY': process.env.API_KEY
+        'GITHUB_TOKEN': githubToken,
+        'API_KEY': apiSecret
       }
     })
   

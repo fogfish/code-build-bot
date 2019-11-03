@@ -39,13 +39,14 @@ const AllowCodeBuild = (): iam.PolicyStatement =>
 //
 const Lambda = (role: iam.IRole): pure.IPure<lambda.Function> => {
   const iaac = pure.iaac(lambda.Function)
+  const githubToken = process.env.GITHUB_TOKEN || 'undefined'
   const CodeBuildSup = (): lambda.FunctionProps =>
   ({
     runtime: lambda.Runtime.NODEJS_10_X,
     code: new lambda.AssetCode('../apps/webhook'),
     handler: 'supervisor.main',
     role,
-    environment: { 'GITHUB_TOKEN': process.env.GITHUB_TOKEN }
+    environment: { 'GITHUB_TOKEN': githubToken }
   })
   return iaac(CodeBuildSup)
 }

@@ -20,9 +20,15 @@ const LogGroup = (): logs.LogGroupProps =>
 
 //
 const app = new cdk.App()
-const Stack = (): cdk.StackProps => ({})
+const CodeBuildBot = (): cdk.StackProps => ({
+  env: {
+    account: process.env.CDK_DEFAULT_ACCOUNT,
+    region: process.env.CDK_DEFAULT_REGION,
+  }  
+})
+
 pure.join(app,
-  pure.iaac(cdk.Stack)(Stack)
+  pure.iaac(cdk.Stack)(CodeBuildBot)
   .effect(x => {
     pure.join(x, restapi.Gateway)
     pure.join(x, pure.iaac(logs.LogGroup)(LogGroup))

@@ -87,15 +87,18 @@ export namespace codebuild {
     return run(build, 'checkspec.yml')
   }
 
-  export async function build(build: type.Build): Promise<type.URL | undefined> {
+  export async function build(build: type.Build): Promise<type.URL> {
     return run(build, 'buildspec.yml')
+  }
+
+  export async function clean(build: type.Build): Promise<type.URL> {
+    return run(build, 'cleanspec.yml')
   }
 
   async function run(build: type.Build, buildspec: string): Promise<type.URL> {
     const name = nameCodeBuild(build.webhook.base.repository)
     const vars = [
       {name: 'WEBHOOK', value: JSON.stringify(build.webhook)},
-      {name: 'BUILD', value: build.type},
       {name: "BUILD_ISSUE", value: String(build.webhook.issue.number)},
       {name: "BUILD_COMMIT", value: build.webhook.head.commit},
       {name: "BUILD_RELEASE", value: build.webhook.release}

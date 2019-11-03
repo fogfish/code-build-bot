@@ -21,7 +21,7 @@ The Code Build Bot does similar things as [AWS Code Pipeline](https://aws.amazon
 
 **Infrastructure as a Code** is only the right way to manage cloud resources. The provisioning and deployment of cloud resources shall be aligned with a service delivery and orchestrated by CI/CD system. This bot supports IaaC automation using either [Cloud Formation](https://aws.amazon.com/cloudformation/) or [AWS CDK](https://docs.aws.amazon.com/cdk/latest/guide/home.html). The **deployment automation** is a key feature here, please see my workflow for details. 
 
-Often, **flexibility on configurations** becomes an issue if you are using custome CI/CD API or point-and-click UIs, especially if you are aiming 100% automation. Everything shall be code including CI/CD pipelines. The Code Build Bot promotes usage of AWS CDK or shell scripts to implement delivery pipelines. This is extremely important with modern processes that relies on heterogenous technologies (e.g. `npm` is optimized for building and packaging JavaScript application but this is a wrong tool to make cloud deployments - `cdk` shall be used). 
+Often, **flexibility on configurations** becomes an issue if you are using custom CI/CD API or point-and-click UIs, especially if you are aiming 100% automation. Everything shall be code including CI/CD pipelines. The Code Build Bot promotes usage of AWS CDK or shell scripts to implement delivery pipelines. This is extremely important with modern processes that relies on heterogenous technologies (e.g. `npm` is optimized for building and packaging JavaScript application but this is a wrong tool to make cloud deployments - `cdk` shall be used). 
 
 As developer I want to have a **repeatable pipelines** so that exactly same automation pipeline is executed by CI/CD and myself while testing/development. This overlooked if your team follows segregation of application development from operations (DevOps). This also means co-allocation of pipelines configuration next to application code. 
 
@@ -64,6 +64,11 @@ export GITHUB_TOKEN=deadbeefa1facecafe
 ## Allocate a api secret key to protect your api
 ## https://developer.github.com/webhooks/securing/
 export API_KEY=secret
+
+##
+## The domain to deploy Code Bot api
+## (e.g. https://ci.example.com) 
+export CI_DOMAIN=example.com
 ```
 
 Use Makefile orchestration to build and deploy the bot to your account.
@@ -96,7 +101,7 @@ RUN set -eu \
 
 Use Output endpoint as webhook for your repositories
 
-* Payload URL `https://xxx.execute-api.eu-west-1.amazonaws.com/api/webhook`
+* Payload URL `https://ci.example.com/api/webhook`
 * Content type `application/json`
 * Secret (value of API_KEY) `secret`
 * Pick individual events

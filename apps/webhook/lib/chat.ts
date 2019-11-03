@@ -114,7 +114,11 @@ class BugReport implements Say<type.Build> {
     const [owner, repo] = build.webhook.base.repository.split('/')
     const number = build.webhook.issue.number
     const title = `${this.prefix} of PR ${number} is failed.`
-    const body = `Caused by **Pull Request** #${number}, See [build logs](${msg.logs})
+    const body = `
+### CI: failure
+* Pull Request: #${number}
+* Commit ID: ${build.webhook.head}
+* [Build Logs](${msg.logs})
 
 \`\`\`javascript
 ${msg.text}
@@ -139,13 +143,23 @@ class Comment implements Say<type.Build> {
   async say(build: type.Build, msg: Msg): Promise<type.WebHook> {
     const [owner, repo] = build.webhook.base.repository.split('/')
     const issue_number = build.webhook.issue.number
-    const body = !msg.text
-      ? `${msg.topic} [${this.state}](${msg.logs})`
-      : `${msg.topic} [${this.state}](${msg.logs})
+    const message = () =>
+      !msg.text ? '' : `
 \`\`\`javascript
 ${msg.text}
 \`\`\`
 `
+    const body = `
+### CI: ${this.state}
+* ${msg.topic}
+* Pull Request: #${issue_number}
+* Commit ID: ${build.webhook.head}
+* [Build Logs](${msg.logs})
+
+
+${message()}
+`
+
     return Config.github.issues
       .createComment({owner, repo, issue_number, body})
       .then(_ => build.webhook)

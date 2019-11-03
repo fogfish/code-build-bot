@@ -43,6 +43,8 @@ async function webhook(build: type.Build): Promise<Response> {
 
     if (build.type !== 'PullRequest') {
       await codebuild.build(build)
+    } if (build.type == 'CleanUp') { 
+      await codebuild.clean(build)
     } else {
       const spec = await codebuild.file(build, '.codebuild.json')
       if (spec.approver && spec.approver.indexOf(build.webhook.head.developer) !== -1) {
