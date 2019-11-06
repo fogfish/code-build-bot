@@ -38,34 +38,27 @@ function auth(json: type.Json): boolean {
 async function webhook(build: type.Build): Promise<Response> {
   console.log("==[ build ]==> ", JSON.stringify(build))
   try {
+    let url: string = 'undefined'
     build.webhook = await chat.sayBuildPending(build, {topic: 'build'})
     await codebuild.config(build)
 
     if (build.type === 'Release') {
-      await codebuild.spec(build, 'carryspec.yml')
-        .then(x => x 
-          ? codebuild.carry(build)
-          : Promise.resolve('undefined')
-        )
+      url = await codebuild.carry(build)
     } else if (build.type === 'CleanUp') {
-      await codebuild.spec(build, 'cleanspec.yml')
-        .then(x => x 
-          ? codebuild.clean(build)
-          : Promise.resolve('undefined')
-        )
+      url = await codebuild.clean(build)
     } else if (build.type === 'Master') {
-      await codebuild.spec(build, 'buildspec.yml')
-        .then(x => x 
-          ? codebuild.build(build)
-          : Promise.resolve('undefined')
-        )
+      url = await codebuild.build(build)
     } else {
       const spec = await codebuild.file(build, '.codebuild.json')
       if (spec.approver && spec.approver.indexOf(build.webhook.head.developer) !== -1) {
-        await codebuild.build(build)
+        url = await codebuild.build(build)
       } else {
-        await codebuild.check(build)
+        url = await codebuild.check(build)
       }
+    }
+
+    if (url === 'undefined') {
+      await chat.sayBuildSuccess(build, {topic: 'build skipped'})
     }
 
     return Promise.resolve({statusCode: 200, body: JSON.stringify(build.webhook)})

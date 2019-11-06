@@ -44,12 +44,16 @@ export namespace codebuild {
   export async function spec(build: type.Build, path: string): Promise<boolean> {
     const [owner, repo] = build.webhook.head.repository.split('/')
     const ref = build.webhook.head.commit
-
-    return Config.github.repos
-      .getContents({owner, repo, path, ref})
-      .then(x => {
-        return x.status === 200
-      })
+    try {
+      const r = await Config.github.repos
+        .getContents({owner, repo, path, ref})
+        .then(x => {return x.status === 200})
+      return r
+    } catch (e) {
+      if (e.status === 404)
+        return Promise.resolve(false)
+      throw e
+    } 
   }
 
   //
@@ -95,19 +99,40 @@ export namespace codebuild {
 
   //
   export async function check(build: type.Build): Promise<type.URL> {
-    return run(build, 'checkspec.yml')
+    const file = 'checkspec.yml'
+    return await spec(build, file)
+        .then(x => x 
+          ? run(build, file)
+          : Promise.resolve('undefined')
+        )
+
   }
 
   export async function build(build: type.Build): Promise<type.URL> {
-    return run(build, 'buildspec.yml')
+    const file = 'buildspec.yml'
+    return await spec(build, file)
+        .then(x => x 
+          ? run(build, file)
+          : Promise.resolve('undefined')
+        )
   }
 
   export async function clean(build: type.Build): Promise<type.URL> {
-    return run(build, 'cleanspec.yml')
+    const file = 'cleanspec.yml'
+    return await spec(build, file)
+        .then(x => x 
+          ? run(build, file)
+          : Promise.resolve('undefined')
+        )
   }
 
   export async function carry(build: type.Build): Promise<type.URL> {
-    return run(build, 'carryspec.yml')
+    const file = 'carryspec.yml'
+    return await spec(build, file)
+        .then(x => x 
+          ? run(build, file)
+          : Promise.resolve('undefined')
+        )
   }
 
   async function run(build: type.Build, buildspec: string): Promise<type.URL> {
