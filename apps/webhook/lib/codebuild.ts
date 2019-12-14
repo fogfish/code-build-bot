@@ -110,11 +110,10 @@ export namespace codebuild {
 
   export async function build(build: type.Build): Promise<type.URL> {
     const file = 'buildspec.yml'
-    return await spec(build, file)
-        .then(x => x 
-          ? run(build, file)
-          : Promise.resolve('undefined')
-        )
+    const exists = await spec(build, file)
+    return exists
+      ? run(build, file)
+      : Promise.resolve('undefined')
   }
 
   export async function clean(build: type.Build): Promise<type.URL> {
