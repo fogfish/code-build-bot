@@ -46,6 +46,7 @@ export interface WebHook {
 export interface CodeBuildSpec {
   image: string
   approver: Array<string>
+  env?: Array<string>
 }
 
 //

@@ -59,6 +59,8 @@ export namespace codebuild {
   //
   async function create(build: type.Build, spec: type.CodeBuildSpec): Promise<type.Json> {
     const name = nameCodeBuild(build.webhook.base.repository)
+    const env = !spec.env ? [] :
+      spec.env.map(name => ({ name, value: '' })) 
     return Config.codebuild.createProject({
       name: name,
       source: {
@@ -73,7 +75,8 @@ export namespace codebuild {
         type: "LINUX_CONTAINER",
         image: code_build_image(spec.image),
         computeType: "BUILD_GENERAL1_SMALL",
-        privilegedMode: true
+        privilegedMode: true,
+        environmentVariables: env,
       },
       serviceRole: Config.CODE_BUILD_ROLE,
       logsConfig: {
