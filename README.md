@@ -124,7 +124,11 @@ Add `.codebuild.json` to your project. The file supports auto-configuration of C
 
   // users who's contribution is automatically deployed
   // you can disable deployments if the list is empty
-  "approver": ["fogfish"]
+  "approver": ["fogfish"],
+
+  // placeholder of CodeBuild envs, use them to delivery
+  // private config to build
+  "env": ["CONFIG_FEATURE"]
 }
 ```
 
