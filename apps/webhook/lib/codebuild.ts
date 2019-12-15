@@ -44,16 +44,19 @@ export namespace codebuild {
   export async function spec(build: type.Build, path: string): Promise<boolean> {
     const [owner, repo] = build.webhook.head.repository.split('/')
     const ref = build.webhook.head.commit
-    try {
-      const r = await Config.github.repos
-        .getContents({owner, repo, path, ref})
-        .then(x => {return x.status === 200})
-      return r
-    } catch (e) {
-      if (e.status === 404)
-        return Promise.resolve(false)
-      throw e
-    } 
+    return await Config.github.repos
+      .getContents({owner, repo, path, ref})
+      .then(x => {return x.status === 200})
+    // try {
+    //   const r = await Config.github.repos
+    //     .getContents({owner, repo, path, ref})
+    //     .then(x => {return x.status === 200})
+    //   return r
+    // } catch (e) {
+    //   if (e.status === 404)
+    //     return Promise.resolve(false)
+    //   throw e
+    // } 
   }
 
   //
