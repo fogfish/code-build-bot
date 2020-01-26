@@ -65,9 +65,14 @@ function decodeRelease(json: type.Json): string {
 }
 
 function decodeIssue(json: type.Json): type.Issue {
+  const decodeNumber = (message: string): number => {
+    const seq = message.match(/#\d+/)
+    return (seq && seq.length > 0) ? Number(seq[0].substring(1)) : 0
+  }
+
   const number = 'pull_request' in json 
     ? Number(json.pull_request.number)
-    : Number(json.head_commit.message.match(/#\d+/)[0].substring(1))
+    : decodeNumber(json.head_commit.message)
 
   const title  = 'pull_request' in json
     ? json.pull_request.title 

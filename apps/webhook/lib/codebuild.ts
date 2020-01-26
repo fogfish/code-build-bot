@@ -47,16 +47,6 @@ export namespace codebuild {
     return await Config.github.repos
       .getContents({owner, repo, path, ref})
       .then(x => {return x.status === 200})
-    // try {
-    //   const r = await Config.github.repos
-    //     .getContents({owner, repo, path, ref})
-    //     .then(x => {return x.status === 200})
-    //   return r
-    // } catch (e) {
-    //   if (e.status === 404)
-    //     return Promise.resolve(false)
-    //   throw e
-    // } 
   }
 
   //
