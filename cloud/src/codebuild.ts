@@ -80,6 +80,7 @@ export const Role = (): pure.IPure<iam.IRole> =>
     .effect(x => x.addManagedPolicy(AmazonAPIGatewayAdministrator))
     .effect(x => x.addManagedPolicy(IAMFullAccess))
     .effect(x => x.addManagedPolicy(AmazonRoute53FullAccess))
+    .effect(x => x.addManagedPolicy(AmazonSQSFullAccess))
     .effect(x => x.addToPolicy(AllowLogsWrite()))
     .effect(x => x.addToPolicy(AllowSecretManagerReadOnly()))
 
@@ -92,6 +93,7 @@ const AWSLambdaFullAccess = iam.ManagedPolicy.fromAwsManagedPolicyName("AWSLambd
 const AmazonAPIGatewayAdministrator = iam.ManagedPolicy.fromAwsManagedPolicyName("AmazonAPIGatewayAdministrator")
 const IAMFullAccess = iam.ManagedPolicy.fromAwsManagedPolicyName("IAMFullAccess")
 const AmazonRoute53FullAccess = iam.ManagedPolicy.fromAwsManagedPolicyName("AmazonRoute53FullAccess")
+const AmazonSQSFullAccess = iam.ManagedPolicy.fromAwsManagedPolicyName("AmazonSQSFullAccess")
 
 const AllowSecretManagerReadOnly = (): iam.PolicyStatement =>
   new iam.PolicyStatement({
