@@ -44,7 +44,7 @@ export namespace codebuild {
   export async function spec(build: type.Build, path: string): Promise<boolean> {
     const [owner, repo] = build.webhook.head.repository.split('/')
     const ref = build.webhook.head.commit
-    return await Config.github.repos
+    return Config.github.repos
       .getContents({owner, repo, path, ref})
       .then(x => {return x.status === 200})
   }

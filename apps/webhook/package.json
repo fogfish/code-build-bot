@@ -12,9 +12,9 @@
   },
   "license": "Apache-2.0",
   "dependencies": {
-    "@octokit/rest": "^16.28.7",
+    "@octokit/rest": "^17.6.0",
     "@types/aws-sdk": "*",
-    "@types/node": "^12.7.1",
-    "aws-sdk": "^2.503.0"
+    "@types/node": "^13.13.2",
+    "aws-sdk": "^2.663.0"
   }
 }

@@ -7,7 +7,7 @@
 //
 // @doc
 //   TypeSafe configuration of BOT
-import Octokit = require('@octokit/rest')
+import { Octokit } from '@octokit/rest'
 import * as aws from 'aws-sdk'
 
 aws.config.update({ region: process.env.AWS_REGION })
@@ -25,7 +25,7 @@ export class Config {
   static readonly github = new Octokit({
     baseUrl: 'https://api.github.com',
     auth: Config.GITHUB_TOKEN,
-    userAgent: 'code-build-bot v1.2.3',
+    userAgent: 'code-build-bot',
     log: {
       debug: console.log,
       info: console.log,
