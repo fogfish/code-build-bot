@@ -7,6 +7,9 @@
 //
 import * as type from './code-build-bot'
 import { Config } from './config'
+import { Endpoints } from '@octokit/types/src/generated/Endpoints'
+import { Endpoint } from 'aws-sdk'
+import { Octokit } from '@octokit/rest'
 
 export namespace codebuild {
 
@@ -36,7 +39,8 @@ export namespace codebuild {
     return Config.github.repos
       .getContents({owner, repo, path, ref})
       .then(x => {
-        const data = (Buffer.from(x.data.content, 'base64')).toString('utf-8')
+        const value = x.data as {content: string}
+        const data = (Buffer.from(value.content, 'base64')).toString('utf-8')
         return <type.CodeBuildSpec>JSON.parse(data)
       })
   }
