@@ -6,6 +6,7 @@
 // https://github.com/fogfish/code-build-bot
 //
 import * as pure from 'aws-cdk-pure'
+import * as cdk from '@aws-cdk/core'
 import * as events from '@aws-cdk/aws-events'
 import * as target from '@aws-cdk/aws-events-targets'
 import * as lambda from '@aws-cdk/aws-lambda'
@@ -45,6 +46,7 @@ const Lambda = (role: iam.IRole): pure.IPure<lambda.Function> => {
     runtime: lambda.Runtime.NODEJS_10_X,
     code: new lambda.AssetCode('../apps/webhook'),
     handler: 'supervisor.main',
+    timeout: cdk.Duration.seconds(120),
     role,
     environment: { 'GITHUB_TOKEN': githubToken }
   })
@@ -81,6 +83,7 @@ export const Role = (): pure.IPure<iam.IRole> =>
     .effect(x => x.addManagedPolicy(IAMFullAccess))
     .effect(x => x.addManagedPolicy(AmazonRoute53FullAccess))
     .effect(x => x.addManagedPolicy(AmazonSQSFullAccess))
+    .effect(x => x.addManagedPolicy(KMSFullAccess))
     .effect(x => x.addToPolicy(AllowLogsWrite()))
     .effect(x => x.addToPolicy(AllowSecretManagerReadOnly()))
 
@@ -94,6 +97,7 @@ const AmazonAPIGatewayAdministrator = iam.ManagedPolicy.fromAwsManagedPolicyName
 const IAMFullAccess = iam.ManagedPolicy.fromAwsManagedPolicyName("IAMFullAccess")
 const AmazonRoute53FullAccess = iam.ManagedPolicy.fromAwsManagedPolicyName("AmazonRoute53FullAccess")
 const AmazonSQSFullAccess = iam.ManagedPolicy.fromAwsManagedPolicyName("AmazonSQSFullAccess")
+const KMSFullAccess = iam.ManagedPolicy.fromAwsManagedPolicyName("AWSKeyManagementServicePowerUser")
 
 const AllowSecretManagerReadOnly = (): iam.PolicyStatement =>
   new iam.PolicyStatement({

@@ -7,9 +7,7 @@
 //
 import * as type from './code-build-bot'
 import { Config } from './config'
-import { Endpoints } from '@octokit/types/src/generated/Endpoints'
-import { Endpoint } from 'aws-sdk'
-import { Octokit } from '@octokit/rest'
+import { RestEndpointMethodTypes } from "@octokit/rest";
 
 export namespace codebuild {
 
@@ -39,9 +37,13 @@ export namespace codebuild {
     return Config.github.repos
       .getContents({owner, repo, path, ref})
       .then(x => {
-        const value = x.data as {content: string}
-        const data = (Buffer.from(value.content, 'base64')).toString('utf-8')
-        return <type.CodeBuildSpec>JSON.parse(data)
+        type T = RestEndpointMethodTypes["repos"]["getContents"]["response"]["data"]
+        const value = x.data as T
+        if ("content" in value) {
+          const data = (Buffer.from(value.content || '', 'base64')).toString('utf-8')
+          return <type.CodeBuildSpec>JSON.parse(data)
+        }
+        throw new Error('build spec is not defined.')
       })
   }
 

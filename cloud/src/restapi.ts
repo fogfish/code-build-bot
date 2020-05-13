@@ -23,24 +23,6 @@ export const Gateway = (): pure.IPure<api.RestApi> =>
 
 //
 //
-/*
-const RestApi = (): pure.IPure<api.RestApi> => {
-  const iaac = pure.iaac(api.RestApi)
-  const CodeBuildApi = (): api.RestApiProps => 
-    ({
-      deploy: true,
-      deployOptions: {
-        stageName: 'api'
-      },
-      failOnWarnings: true,
-      endpointTypes: [api.EndpointType.REGIONAL]
-    })
-  return iaac(CodeBuildApi)
-}
-*/
-
-//
-//
 const WebHook = (): pure.IPure<api.LambdaIntegration> =>
   pure.use({
     roleLambda: Role(),
@@ -61,6 +43,7 @@ const CodeBuildHook = (role: iam.IRole, roleCodeBuild: iam.IRole): pure.IPure<ap
       runtime: lambda.Runtime.NODEJS_10_X,
       code: new lambda.AssetCode('../apps/webhook'),
       handler: 'webhook.main',
+      timeout: cdk.Duration.seconds(120),
       role,
       environment: {
         'CODE_BUILD_BASE': `${cdk.Aws.ACCOUNT_ID}.dkr.ecr.${cdk.Aws.REGION}.amazonaws.com/${namespace}`,
