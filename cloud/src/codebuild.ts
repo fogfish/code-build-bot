@@ -83,9 +83,9 @@ export const Role = (): pure.IPure<iam.IRole> =>
     .effect(x => x.addManagedPolicy(IAMFullAccess))
     .effect(x => x.addManagedPolicy(AmazonRoute53FullAccess))
     .effect(x => x.addManagedPolicy(AmazonSQSFullAccess))
-    .effect(x => x.addManagedPolicy(KMSFullAccess))
     .effect(x => x.addToPolicy(AllowLogsWrite()))
     .effect(x => x.addToPolicy(AllowSecretManagerReadOnly()))
+    .effect(x => x.addToPolicy(KMSFullAccess()))
 
 
 const CodeBuildRole = (): iam.RoleProps =>
@@ -97,10 +97,32 @@ const AmazonAPIGatewayAdministrator = iam.ManagedPolicy.fromAwsManagedPolicyName
 const IAMFullAccess = iam.ManagedPolicy.fromAwsManagedPolicyName("IAMFullAccess")
 const AmazonRoute53FullAccess = iam.ManagedPolicy.fromAwsManagedPolicyName("AmazonRoute53FullAccess")
 const AmazonSQSFullAccess = iam.ManagedPolicy.fromAwsManagedPolicyName("AmazonSQSFullAccess")
-const KMSFullAccess = iam.ManagedPolicy.fromAwsManagedPolicyName("AWSKeyManagementServicePowerUser")
 
 const AllowSecretManagerReadOnly = (): iam.PolicyStatement =>
   new iam.PolicyStatement({
     resources: ['*'],
     actions: ['secretsmanager:GetSecretValue']
   })
+
+const KMSFullAccess = (): iam.PolicyStatement =>
+  new iam.PolicyStatement({
+    resources: ['*'],
+    actions: [
+      // AWSKeyManagementServicePowerUser
+      "kms:CreateAlias",
+      "kms:CreateKey",
+      "kms:DeleteAlias",
+      "kms:Describe*",
+      "kms:GenerateRandom",
+      "kms:Get*",
+      "kms:List*",
+      "kms:TagResource",
+      "kms:UntagResource",
+      "iam:ListGroups",
+      "iam:ListRoles",
+      "iam:ListUsers",
+
+      'kms:PutKeyPolicy'
+    ]
+  })
+
